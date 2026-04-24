@@ -167,11 +167,28 @@ export default function Hero() {
         >
           <a
             href="#reservation"
-            className="btn-gold-ornate flex h-[58px] items-center justify-between px-7 font-[family-name:var(--font-noto-serif)] text-[15px] font-bold tracking-[0.08em] sm:h-16 sm:text-[17px]"
+            className="btn-gold-ornate relative flex h-[58px] items-center justify-between overflow-hidden px-7 font-[family-name:var(--font-noto-serif)] text-[15px] font-bold tracking-[0.08em] sm:h-16 sm:text-[17px]"
           >
-            <span aria-hidden="true" className="w-4" />
-            <span className="flex-1 text-center">{t("ご予約はこちら", "Reserve your seat")}</span>
-            <ChevronRight size={20} strokeWidth={1.6} aria-hidden="true" />
+            {/* Diagonal glint sweep — periodic shine across the button face */}
+            <motion.span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 w-[42%]"
+              style={{
+                background:
+                  "linear-gradient(108deg, transparent 20%, rgba(255,255,255,0.55) 50%, transparent 80%)",
+              }}
+              initial={{ x: "-160%" }}
+              animate={{ x: "360%" }}
+              transition={{
+                duration: 2.4,
+                ease: "easeInOut",
+                repeat: Infinity,
+                repeatDelay: 2.6,
+              }}
+            />
+            <span aria-hidden="true" className="relative w-4" />
+            <span className="relative flex-1 text-center">{t("ご予約はこちら", "Reserve your seat")}</span>
+            <ChevronRight size={20} strokeWidth={1.6} aria-hidden="true" className="relative" />
           </a>
           <a
             href={CONTACT.whatsapp.reservationHref}
