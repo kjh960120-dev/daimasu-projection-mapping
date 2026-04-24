@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://daimasu.com.ph/sitemap.xml
