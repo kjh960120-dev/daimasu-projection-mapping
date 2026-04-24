@@ -73,17 +73,17 @@ function buildTelegramMessage(payload: {
 }): string {
   const dateFmt = formatHumanDate(payload.date, "en");
   return [
-    "🍱 <b>DAIMASU 예약 요청 / New Reservation</b>",
+    "<b>DAIMASU 예약 요청 / New Reservation</b>",
     "━━━━━━━━━━━━━━━━━━━━━",
-    `👤 <b>이름</b>: ${escapeHtml(payload.name)}`,
-    `📞 <b>전화</b>: ${escapeHtml(payload.phone)}`,
-    `📅 <b>날짜</b>: ${escapeHtml(dateFmt)}`,
-    `🕐 <b>시간</b>: ${escapeHtml(payload.seating)}`,
-    `👥 <b>인원</b>: ${escapeHtml(payload.party)}명`,
-    `💬 <b>비고</b>: ${escapeHtml(payload.notes || "없음")}`,
+    `<b>이름</b>: ${escapeHtml(payload.name)}`,
+    `<b>전화</b>: ${escapeHtml(payload.phone)}`,
+    `<b>날짜</b>: ${escapeHtml(dateFmt)}`,
+    `<b>시간</b>: ${escapeHtml(payload.seating)}`,
+    `<b>인원</b>: ${escapeHtml(payload.party)}명`,
+    `<b>비고</b>: ${escapeHtml(payload.notes || "없음")}`,
     "━━━━━━━━━━━━━━━━━━━━━",
-    `⏰ 제출: ${formatManilaNow()}`,
-    "🌐 via daimasu.com.ph",
+    `제출: ${formatManilaNow()}`,
+    "via daimasu.com.ph",
   ].join("\n");
 }
 

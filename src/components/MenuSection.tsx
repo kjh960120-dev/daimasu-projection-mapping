@@ -5,15 +5,19 @@ import { useEffect, useRef, useState } from "react";
 import { MENU_COURSES } from "@/lib/constants";
 import { useLang } from "@/lib/language";
 
-const TIME_OF_DAY: { ja: string; en: string; color: string; icon: string }[] = [
-  { ja: "桜色", en: "Cherry", color: "text-pink-200/70", icon: "🌸" },
-  { ja: "燈明", en: "Candle", color: "text-amber-300/70", icon: "🕯" },
-  { ja: "深藍", en: "Indigo", color: "text-indigo-300/70", icon: "🌊" },
-  { ja: "焔", en: "Flame", color: "text-orange-400/70", icon: "🔥" },
-  { ja: "雪銀", en: "Silver", color: "text-slate-200/70", icon: "❄️" },
-  { ja: "霞", en: "Mist", color: "text-sky-200/60", icon: "🌫" },
-  { ja: "檜光", en: "Hinoki", color: "text-yellow-200/70", icon: "🍵" },
-  { ja: "宵闇", en: "Twilight", color: "text-indigo-400/60", icon: "🌙" },
+// Per-course mood label. Emoji icons + per-mood hues were removed
+// (brand-invariant: gold is the only accent color; no emoji decoration).
+// All mood labels now share `text-gold-soft`, preserving the JP/EN naming
+// as the only source of mood differentiation.
+const TIME_OF_DAY: { ja: string; en: string }[] = [
+  { ja: "桜色", en: "Cherry" },
+  { ja: "燈明", en: "Candle" },
+  { ja: "深藍", en: "Indigo" },
+  { ja: "焔", en: "Flame" },
+  { ja: "雪銀", en: "Silver" },
+  { ja: "霞", en: "Mist" },
+  { ja: "檜光", en: "Hinoki" },
+  { ja: "宵闇", en: "Twilight" },
 ];
 
 export default function MenuSection() {
@@ -138,12 +142,13 @@ export default function MenuSection() {
                           Course {sceneNum}
                         </span>
                         <span className="text-[10px] text-gold/40">—</span>
-                        <span className={`text-[10px] tracking-[0.15em] ${time.color}`}>
+                        <span className="text-[10px] tracking-[0.15em] text-gold-soft">
                           {t(time.ja, time.en)}
                         </span>
-                        <span className="ml-auto text-sm" aria-hidden="true">
-                          {time.icon}
-                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="ml-auto inline-block h-1.5 w-1.5 rotate-45 bg-gold/60"
+                        />
                       </div>
                       <div className="mb-2 flex min-w-0 items-center gap-1.5">
                         <svg
@@ -242,12 +247,13 @@ export default function MenuSection() {
                     <span className="text-[10px] tracking-[0.2em] uppercase opacity-80" style={{ color: "var(--gold)" }}>
                       —
                     </span>
-                    <span className={`text-[10px] tracking-[0.15em] ${time.color}`}>
+                    <span className="text-[10px] tracking-[0.15em] text-gold-soft">
                       {t(time.ja, time.en)}
                     </span>
-                    <span className="text-sm" aria-hidden="true">
-                      {time.icon}
-                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-1.5 w-1.5 rotate-45 bg-gold/60"
+                    />
                   </div>
 
                   {/* Location */}
@@ -317,12 +323,13 @@ export default function MenuSection() {
                     Course {sceneNum}
                   </span>
                   <span className="text-[10px] text-gold/40">—</span>
-                  <span className={`text-[10px] tracking-[0.15em] ${time.color}`}>
+                  <span className="text-[10px] tracking-[0.15em] text-gold-soft">
                     {t(time.ja, time.en)}
                   </span>
-                  <span className="ml-auto text-xl" aria-hidden="true">
-                    {time.icon}
-                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="ml-auto inline-block h-2 w-2 rotate-45 bg-gold/60"
+                  />
                 </div>
 
                 <div className="mb-3 flex items-center gap-1.5">
