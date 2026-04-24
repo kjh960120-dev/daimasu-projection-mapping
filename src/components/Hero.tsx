@@ -78,7 +78,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.5, delay: 0.3 }}
-          className="inline-flex min-w-[214px] items-center justify-center border border-[rgba(212,175,55,0.72)] bg-black/25 px-4 py-2.5 font-[family-name:var(--font-noto-serif)] text-[13px] tracking-[0.16em] text-gold backdrop-blur-[4px] shadow-[inset_0_0_18px_rgba(212,175,55,0.08)] sm:min-w-[250px] sm:px-5 sm:py-3 sm:text-[14px]"
+          className="text-shadow-hero inline-flex min-w-[214px] items-center justify-center border border-[rgba(212,175,55,0.72)] bg-black/25 px-4 py-2.5 font-[family-name:var(--font-noto-serif)] text-[13px] tracking-[0.16em] text-gold backdrop-blur-[4px] shadow-[inset_0_0_18px_rgba(212,175,55,0.08)] sm:min-w-[250px] sm:px-5 sm:py-3 sm:text-[14px]"
         >
           <span>{CURRENT_CHAPTER.number}</span>
           <span className="mx-3 text-[#F2D47A]/60 sm:mx-[14px]">|</span>
@@ -107,7 +107,7 @@ export default function Hero() {
         {/* H1 — Noto Serif JP Bold, clamp(42px, 11vw, 72px), 0.04em, 1.15 leading.
             CSS animation (not framer-motion) so Lighthouse detects it as an LCP candidate. */}
         <h1
-          className="hero-h1 mb-[22px] whitespace-nowrap font-[family-name:var(--font-noto-serif)] font-bold leading-[1.15] tracking-[0.02em] text-foreground [font-size:clamp(30px,9vw,72px)] [text-shadow:0_4px_20px_rgba(0,0,0,0.75),0_0_18px_rgba(255,255,255,0.12)]"
+          className="hero-h1 mb-[22px] whitespace-nowrap font-[family-name:var(--font-noto-serif)] font-bold leading-[1.15] tracking-[0.02em] text-foreground [font-size:clamp(30px,9vw,72px)] [text-shadow:0_0_40px_rgba(0,0,0,0.95),0_0_20px_rgba(0,0,0,0.85),0_4px_8px_rgba(0,0,0,0.75),0_0_22px_rgba(255,255,255,0.12)]"
         >
           {t(
             <>
@@ -150,7 +150,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mb-8 font-[family-name:var(--font-cinzel),var(--font-noto-serif),serif] tracking-[0.07em] text-gold [font-size:clamp(17px,4vw,23px)] [text-shadow:0_0_16px_rgba(212,175,55,0.35)]"
+          className="text-shadow-hero-gold mb-8 font-[family-name:var(--font-cinzel),var(--font-noto-serif),serif] tracking-[0.07em] text-gold [font-size:clamp(17px,4vw,23px)]"
         >
           {COURSE_PRICE.amount}
           <span className="ml-1 text-[0.78em] tracking-[0.12em]">PHP</span>
