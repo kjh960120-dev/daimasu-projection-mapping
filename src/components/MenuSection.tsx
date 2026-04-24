@@ -103,7 +103,7 @@ export default function MenuSection() {
           aria-label={t("コース早送り", "Jump to course")}
           className="sticky top-20 z-30 mb-10 -mx-2 hidden justify-center lg:flex"
         >
-          <ul className="flex items-center gap-1.5 rounded-full border border-border bg-background/85 px-4 py-2 backdrop-blur-md">
+          <ul className="flex items-center gap-2 border border-[rgba(212,175,55,0.35)] bg-black/50 px-4 py-2 backdrop-blur-md">
             {MENU_COURSES.map((c, i) => {
               const num = String(i + 1).padStart(2, "0");
               return (
@@ -113,7 +113,7 @@ export default function MenuSection() {
                     aria-label={`Course ${num} — ${t(c.name.ja, c.name.en)}`}
                     className="group inline-flex h-6 w-6 items-center justify-center"
                   >
-                    <span className="block h-1.5 w-1.5 rounded-full bg-gold/30 transition-all duration-300 group-hover:h-2 group-hover:w-2 group-hover:bg-gold/90 group-focus-visible:h-2 group-focus-visible:w-2 group-focus-visible:bg-gold/90" />
+                    <span className="block h-1.5 w-1.5 rotate-45 bg-gold/35 transition-all duration-300 group-hover:h-2 group-hover:w-2 group-hover:bg-gold group-focus-visible:h-2 group-focus-visible:w-2 group-focus-visible:bg-gold" />
                   </a>
                 </li>
               );
@@ -192,8 +192,8 @@ export default function MenuSection() {
                 aria-current={i === activeIdx ? "true" : undefined}
                 className={
                   i === activeIdx
-                    ? "h-1.5 w-6 rounded-full bg-gold transition-all duration-300"
-                    : "h-1.5 w-1.5 rounded-full bg-gold/30 transition-all duration-300"
+                    ? "h-[2px] w-6 bg-gold transition-all duration-300"
+                    : "h-1.5 w-1.5 rotate-45 bg-gold/35 transition-all duration-300"
                 }
               />
             ))}

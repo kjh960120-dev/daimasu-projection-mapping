@@ -314,7 +314,7 @@ export default function ReservationForm() {
           <button
             type="submit"
             disabled={status === "sending" || status === "success" || !selectedDate}
-            className="inline-flex items-center justify-center gap-2 bg-gold px-8 py-4 text-sm tracking-[0.2em] text-background transition-all duration-300 hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-8 py-4 font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {status === "sending" ? (
               <>
@@ -387,7 +387,7 @@ export default function ReservationForm() {
             href={CONTACT.whatsapp.reservationHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center justify-center gap-2 border border-gold/60 bg-gold/5 px-6 py-3 text-xs tracking-[0.2em] text-gold transition-all duration-300 hover:bg-gold/15"
+            className="btn-ornate-ghost group inline-flex items-center justify-center gap-2 px-6 py-3 font-[family-name:var(--font-noto-serif)] text-xs font-medium tracking-[0.14em]"
           >
             <MessageCircle size={16} aria-hidden="true" />
             WhatsApp
@@ -397,7 +397,7 @@ export default function ReservationForm() {
             href={CONTACT.viber.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center justify-center gap-2 border border-gold/60 bg-gold/5 px-6 py-3 text-xs tracking-[0.2em] text-gold transition-all duration-300 hover:bg-gold/15"
+            className="btn-ornate-ghost group inline-flex items-center justify-center gap-2 px-6 py-3 font-[family-name:var(--font-noto-serif)] text-xs font-medium tracking-[0.14em]"
           >
             <ViberIcon size={16} />
             Viber

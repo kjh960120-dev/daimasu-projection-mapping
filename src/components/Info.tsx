@@ -332,7 +332,7 @@ export default function Info() {
               href={CONTACT.mapLinkUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 self-start border border-gold/60 bg-gold/5 px-5 py-2.5 text-xs tracking-[0.2em] text-gold transition-all duration-300 hover:bg-gold/10"
+              className="btn-ornate-ghost inline-flex items-center gap-2 self-start px-5 py-2.5 font-[family-name:var(--font-noto-serif)] text-xs font-medium tracking-[0.14em]"
             >
               {t("Google マップで開く", "Open in Google Maps")}
               <ArrowUpRight size={12} aria-hidden="true" />

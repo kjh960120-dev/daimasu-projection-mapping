@@ -102,7 +102,7 @@ export default function Header() {
 
             <a
               href="#reservation"
-              className="inline-flex items-center gap-1.5 bg-gold px-6 py-2.5 text-xs tracking-[0.2em] text-background transition-all duration-300 hover:bg-gold-light"
+              className="btn-gold-ornate inline-flex items-center px-6 py-2.5 font-[family-name:var(--font-noto-serif)] text-xs font-medium tracking-[0.14em]"
             >
               {t("ご予約", "Book a Table")}
             </a>
@@ -159,7 +159,7 @@ export default function Header() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: (NAV_ITEMS.length + 1) * 0.1 }}
-                className="mt-2 inline-flex items-center gap-2 bg-gold px-8 py-3 text-sm tracking-[0.2em] text-background transition-all hover:bg-gold-light"
+                className="btn-gold-ornate mt-2 inline-flex items-center px-8 py-3 font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.14em]"
               >
                 {t("ご予約", "Book a Table")}
               </motion.a>
