@@ -69,52 +69,48 @@ body {
   background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
 }
 
-/* TOP spec — Primary CTA (ご予約).
-   Solid gold #D4AF37 with soft inner highlight + warm drop glow. */
+/* Hero — Primary CTA 「ご予約はこちら」
+   Warm brass bevel with specular highlight, warm drop glow, sharp corners. */
 .btn-gold-ornate {
   color: var(--brown-dark);
-  border-radius: 4px;
   background-image:
-    /* 1px specular highlight at top edge */
-    linear-gradient(to bottom,
-      rgba(255, 248, 220, 0.6) 0%,
-      rgba(255, 248, 220, 0) 3%),
-    /* main gold gradient — light at top, main at bottom */
-    linear-gradient(to bottom,
-      var(--gold-light) 0%,
-      var(--gold) 55%,
-      var(--gold-dark) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 35%),
+    linear-gradient(180deg, var(--gold-light), var(--gold) 52%, #b58a25);
+  border: 1px solid #f8dc82;
   box-shadow:
-    inset 0 1px 0 rgba(255, 248, 220, 0.5),
-    inset 0 -1px 0 rgba(60, 40, 10, 0.35),
-    0 8px 24px rgba(212, 175, 55, 0.3);
-  transition: filter 0.3s, box-shadow 0.3s;
+    0 10px 28px rgba(212, 175, 55, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -4px 10px rgba(86, 54, 0, 0.24);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
 }
 .btn-gold-ornate:hover {
-  filter: brightness(1.06) saturate(1.05);
+  transform: translateY(-2px);
+  filter: brightness(1.04);
   box-shadow:
-    inset 0 1px 0 rgba(255, 250, 230, 0.6),
-    inset 0 -1px 0 rgba(60, 40, 10, 0.35),
-    0 8px 28px rgba(212, 175, 55, 0.42);
+    0 14px 34px rgba(212, 175, 55, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -4px 10px rgba(86, 54, 0, 0.24);
 }
 .btn-gold-ornate:active {
   filter: brightness(0.96);
 }
 
-/* TOP spec — Secondary CTA (WhatsApp) + chapter badge outline.
-   Simple 1px gold border on transparent fill, 4px radius.
-   Override --frame-border to tune border color per usage. */
+/* Hero — Secondary CTA 「WhatsAppでお問い合わせ」 + chapter badge outline.
+   Translucent black fill, 1px gold border, backdrop blur. Sharp corners. */
 .btn-ornate-ghost {
-  --frame-border: rgba(212, 175, 55, 0.8);
+  --frame-border: rgba(212, 175, 55, 0.85);
   color: var(--gold);
   border: 1px solid var(--frame-border);
-  border-radius: 4px;
-  background-color: transparent;
-  transition: background-color 0.3s, border-color 0.3s;
+  background-color: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    inset 0 0 18px rgba(212, 175, 55, 0.06),
+    0 8px 22px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s ease, background-color 0.3s, border-color 0.3s;
 }
 .btn-ornate-ghost:hover {
-  background-color: rgba(212, 175, 55, 0.08);
-  border-color: var(--gold);
+  transform: translateY(-2px);
+  background-color: rgba(212, 175, 55, 0.1);
 }
 
 /* Dark halo behind text for legibility over busy hero imagery. */
@@ -124,28 +120,68 @@ body {
     0 0 2px rgba(0, 0, 0, 0.65);
 }
 
-/* TOP spec — Ornate horizontal divider.
-   1px gold line flanked by small diamond motifs at both ends. */
+/* Hero ornament — 180px gold line with two diamond motifs set 76px from each edge. */
 .ornate-divider {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--gold);
+  position: relative;
+  display: block;
+  width: 180px;
+  height: 1px;
+  opacity: 0.85;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
 .ornate-divider::before,
 .ornate-divider::after {
   content: "";
-  flex: 1;
-  height: 1px;
-  background: rgba(212, 175, 55, 0.55);
-}
-.ornate-divider > .ornate-diamond {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  transform: rotate(45deg);
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
   background: var(--gold);
-  opacity: 0.85;
+  transform: translateY(-50%) rotate(45deg);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.7);
+}
+.ornate-divider::before { left: 76px; }
+.ornate-divider::after { right: 76px; }
+
+/* Top gold gradient for the accent character in H1 (食卓). */
+.text-gold-gradient-title {
+  background: linear-gradient(180deg, #fff0ad 0%, #d4af37 45%, #9d7418 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+}
+
+/* Seat-count frame — top/bottom gold borders with centered diamond markers. */
+.limited-frame {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  padding: 22px 0;
+  border-top: 1px solid rgba(212, 175, 55, 0.35);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+}
+.limited-frame::before,
+.limited-frame::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  background: var(--gold);
+  transform: translateX(-50%) rotate(45deg);
+}
+.limited-frame::before { top: -4px; }
+.limited-frame::after  { bottom: -4px; }
+
+/* Down chevron float animation for hero bottom indicator. */
+@keyframes hero-floatdown {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50%      { transform: translateY(8px); opacity: 1; }
+}
+.hero-float-down {
+  animation: hero-floatdown 1.8s ease-in-out infinite;
 }
 
 /* DayPicker — DAIMASU gold theme override.
