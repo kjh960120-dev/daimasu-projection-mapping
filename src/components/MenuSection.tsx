@@ -69,7 +69,7 @@ export default function MenuSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.96, delay: 0.12 }}
-            className="font-[family-name:var(--font-display)] text-3xl font-light tracking-wide sm:text-4xl"
+            className="font-[family-name:var(--font-noto-serif)] text-3xl font-medium tracking-[0.02em] sm:text-4xl"
           >
             {t(
               <>八つの<span className="text-gold-gradient">情景</span>、八つの皿</>,
@@ -168,7 +168,7 @@ export default function MenuSection() {
                           {t(course.craft.ja, course.craft.en)}
                         </span>
                       </div>
-                      <h3 className="max-w-full font-serif text-xl font-light break-words text-foreground">
+                      <h3 className="max-w-full font-serif text-xl font-medium break-words text-foreground">
                         {t(course.name.ja, course.name.en)}
                       </h3>
                       <p className="mt-3 max-w-full text-sm leading-relaxed break-words text-text-secondary">
@@ -276,7 +276,7 @@ export default function MenuSection() {
                   </div>
 
                   {/* Course name */}
-                  <h3 className="font-serif text-lg font-light text-foreground transition-colors duration-600 group-hover:text-gold-light sm:text-xl">
+                  <h3 className="font-serif text-lg font-medium text-foreground transition-colors duration-600 group-hover:text-gold-light sm:text-xl">
                     {t(course.name.ja, course.name.en)}
                   </h3>
 
@@ -351,7 +351,7 @@ export default function MenuSection() {
                   </span>
                 </div>
 
-                <h3 className="font-serif text-xl font-light text-foreground transition-colors duration-500 group-hover:text-gold-light 2xl:text-2xl">
+                <h3 className="font-serif text-xl font-medium text-foreground transition-colors duration-500 group-hover:text-gold-light 2xl:text-2xl">
                   {t(course.name.ja, course.name.en)}
                 </h3>
 

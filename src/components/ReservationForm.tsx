@@ -169,7 +169,7 @@ export default function ReservationForm() {
         <p className="mb-2 text-xs tracking-[0.3em] text-gold/70">
           {t("ご予約", "RESERVATIONS")}
         </p>
-        <h3 className="mb-3 font-[family-name:var(--font-display)] text-2xl font-light tracking-wide text-foreground">
+        <h3 className="mb-3 font-[family-name:var(--font-noto-serif)] text-2xl font-medium tracking-[0.02em] text-foreground">
           {t(
             <>フォームから<span className="text-gold">ご予約</span></>,
             <>Book by <span className="text-gold">filling the form</span></>

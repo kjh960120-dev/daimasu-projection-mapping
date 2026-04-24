@@ -27,7 +27,7 @@ export default function About() {
               initial={{ opacity: 0, x: -20 }}
               animate={inView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="mb-8 font-[family-name:var(--font-display)] text-3xl font-light leading-relaxed tracking-wide sm:text-4xl"
+              className="mb-8 font-[family-name:var(--font-noto-serif)] text-3xl font-medium leading-[1.4] tracking-[0.02em] sm:text-4xl"
             >
               {t(
                 <>八皿に綴られる<br /><span className="text-gold-gradient">一夜</span>の物語</>,
@@ -63,25 +63,25 @@ export default function About() {
               className="flex gap-12"
             >
               <div>
-                <p className="font-[family-name:var(--font-cormorant)] text-4xl font-light text-gold">8</p>
+                <p className="font-[family-name:var(--font-cinzel)] text-4xl font-normal text-gold">8</p>
                 <p className="mt-1 text-xs tracking-wider text-text-muted">
                   {t("コース", "Courses")}
                 </p>
               </div>
               <div>
-                <p className="font-[family-name:var(--font-cormorant)] text-4xl font-light text-gold">90</p>
+                <p className="font-[family-name:var(--font-cinzel)] text-4xl font-normal text-gold">90</p>
                 <p className="mt-1 text-xs tracking-wider text-text-muted">
                   {t("分", "min")}
                 </p>
               </div>
               <div>
-                <p className="font-[family-name:var(--font-cormorant)] text-4xl font-light text-gold">8m</p>
+                <p className="font-[family-name:var(--font-cinzel)] text-4xl font-normal text-gold">8m</p>
                 <p className="mt-1 text-xs tracking-wider text-text-muted">
                   {t("カウンター", "Counter")}
                 </p>
               </div>
               <div>
-                <p className="font-[family-name:var(--font-cormorant)] text-4xl font-light text-gold">8</p>
+                <p className="font-[family-name:var(--font-cinzel)] text-4xl font-normal text-gold">8</p>
                 <p className="mt-1 text-xs tracking-wider text-text-muted">
                   {t("席", "Seats")}
                 </p>
@@ -99,7 +99,7 @@ export default function About() {
                 transition={{ duration: 0.6, delay: 0.2 + i * 0.12 }}
                 className="group border border-border bg-surface/60 p-5 transition-all duration-500 hover:border-gold/30"
               >
-                <p className="mb-1 font-serif text-sm font-light text-gold">
+                <p className="mb-1 font-serif text-sm font-medium text-gold">
                   {t(item.principle.ja, item.principle.en)}
                 </p>
                 <p className="text-xs leading-relaxed text-text-secondary">

@@ -137,7 +137,7 @@ function AccordionItem({
         className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors duration-300 hover:text-gold"
         aria-expanded={open}
       >
-        <span className="font-serif text-sm font-light tracking-wide sm:text-base">
+        <span className="font-serif text-sm font-normal tracking-[0.04em] sm:text-base">
           {t(item.q.ja, item.q.en)}
         </span>
         <motion.span
@@ -191,7 +191,7 @@ export default function Info() {
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-[family-name:var(--font-display)] text-3xl font-light tracking-wide sm:text-4xl"
+            className="font-[family-name:var(--font-noto-serif)] text-3xl font-medium tracking-[0.02em] sm:text-4xl"
           >
             {t(
               <>
