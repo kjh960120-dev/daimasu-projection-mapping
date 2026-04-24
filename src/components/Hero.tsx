@@ -5,15 +5,19 @@ import { ChevronDown, ChevronRight, MessageCircle } from "lucide-react";
 import { CURRENT_CHAPTER, COURSE_PRICE, CONTACT } from "@/lib/constants";
 import { useLang } from "@/lib/language";
 
-// Gold gradient applied inline to bypass Tailwind v4 / Turbopack class-purging quirks
-// that were stripping `.text-gold-gradient-title` from the compiled stylesheet.
-const goldGradientStyle: React.CSSProperties = {
-  background: "linear-gradient(180deg, #fff0ad 0%, #d4af37 45%, #9d7418 100%)",
+// Gold shimmer applied inline to bypass Tailwind v4 / Turbopack class-purging quirks.
+// Base gradient has a bright highlight band that sweeps across the text via
+// framer-motion's backgroundPosition animation (below on the <motion.span>).
+const goldShimmerStyle: React.CSSProperties = {
+  background:
+    "linear-gradient(90deg, #9d7418 0%, #d4af37 28%, #fff0ad 50%, #d4af37 72%, #9d7418 100%)",
+  backgroundSize: "200% 100%",
   WebkitBackgroundClip: "text",
   backgroundClip: "text",
   WebkitTextFillColor: "transparent",
   color: "transparent",
   textShadow: "none",
+  display: "inline-block",
 };
 
 export default function Hero() {
@@ -106,8 +110,28 @@ export default function Hero() {
           className="hero-h1 mb-[22px] whitespace-nowrap font-[family-name:var(--font-noto-serif)] font-bold leading-[1.15] tracking-[0.02em] text-foreground [font-size:clamp(30px,9vw,72px)] [text-shadow:0_4px_20px_rgba(0,0,0,0.75),0_0_18px_rgba(255,255,255,0.12)]"
         >
           {t(
-            <>マスターの<span style={goldGradientStyle}>食卓</span>へ</>,
-            <>An evening at <span style={goldGradientStyle}>Master Owly&apos;s</span> table</>
+            <>
+              マスターの
+              <motion.span
+                style={goldShimmerStyle}
+                animate={{ backgroundPosition: ["0% center", "200% center"] }}
+                transition={{ duration: 3.2, ease: "linear", repeat: Infinity }}
+              >
+                食卓
+              </motion.span>
+              へ
+            </>,
+            <>
+              An evening at{" "}
+              <motion.span
+                style={goldShimmerStyle}
+                animate={{ backgroundPosition: ["0% center", "200% center"] }}
+                transition={{ duration: 3.2, ease: "linear", repeat: Infinity }}
+              >
+                Master Owly&apos;s
+              </motion.span>{" "}
+              table
+            </>
           )}
         </h1>
 
@@ -116,12 +140,9 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.0, delay: 0.5 }}
-          className="mb-6 font-[family-name:var(--font-noto-serif)] leading-[1.8] tracking-[0.08em] text-foreground text-shadow-hero [font-size:clamp(16px,4.2vw,23px)]"
+          className="mb-6 whitespace-nowrap font-[family-name:var(--font-noto-serif)] leading-[1.8] tracking-[0.04em] text-foreground text-shadow-hero [font-size:clamp(12px,3.6vw,22px)] sm:tracking-[0.08em]"
         >
-          {t(
-            <>マスター・アウリと綴る、<br className="sm:hidden" />九十分の懐石劇場</>,
-            <>Ninety minutes. Eight courses.<br className="sm:hidden" /> One owl with a golden feather pen.</>
-          )}
+          {t("マスター・アウリと綴る、九十分の懐石劇場", "Ninety minutes. Eight courses. One owl with a golden feather pen.")}
         </motion.p>
 
         {/* Price — Cinzel-NotoSerifJP stack, clamp(17px, 4vw, 23px), gold with glow */}
