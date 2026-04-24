@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ChevronDown, ChevronRight, MessageCircle } from "lucide-react";
+import { ChevronDown, MessageCircle } from "lucide-react";
 import { SITE, CURRENT_CHAPTER, COURSE_PRICE, CONTACT } from "@/lib/constants";
 import { useLang } from "@/lib/language";
 
@@ -58,129 +58,126 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-5xl px-6 text-center">
+        {/* Chapter badge — 1px border #C8A85A, 2px rounded, Noto Serif JP Medium 14px */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.5, delay: 0.3 }}
-          className="btn-ornate-ghost mb-8 inline-flex items-center gap-3 px-6 py-2.5 text-shadow-hero"
+          className="mb-8 inline-flex items-center gap-3 rounded-[2px] border border-[#C8A85A] px-4 py-2 font-[family-name:var(--font-noto-serif)] text-[14px] font-medium tracking-[0.08em] text-gold text-shadow-hero"
         >
-          <span className="text-[11px] tracking-[0.3em] text-gold/90">
-            {CURRENT_CHAPTER.number}
-          </span>
-          <span className="text-[11px] text-gold/40">|</span>
-          <span className="font-serif text-xs tracking-wider text-gold">
-            {t(CURRENT_CHAPTER.name.ja, CURRENT_CHAPTER.name.en)}
-          </span>
+          <span>{CURRENT_CHAPTER.number}</span>
+          <span className="text-gold/50">|</span>
+          <span>{t(CURRENT_CHAPTER.name.ja, CURRENT_CHAPTER.name.en)}</span>
         </motion.div>
 
-
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 2.25, delay: 0.45, ease: "easeOut" }}
-          className="gold-line mx-auto mb-12 w-24"
-        />
-
+        {/* Kicker — Noto Sans JP 14px #CBB98A 0.12em */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.15 }}
-          className="mb-6 font-[family-name:var(--font-cormorant)] text-xs font-medium uppercase tracking-[0.25em] text-text-secondary text-shadow-hero sm:text-sm sm:tracking-[0.4em]"
+          className="mb-6 font-[family-name:var(--font-noto-sans)] text-[14px] tracking-[0.12em] text-gold-soft text-shadow-hero"
         >
           {t("プロジェクションマッピング・ダイニング", "PROJECTION MAPPING DINING")}
         </motion.p>
 
-        {/* H1 uses pure CSS animation (not framer-motion) so Lighthouse
-            detects it as an LCP candidate without waiting on JS hydration. */}
-        <h1 className="hero-h1 text-shadow-hero mb-4 font-[family-name:var(--font-display)] text-3xl font-light leading-[1.05] tracking-tight text-foreground sm:text-5xl sm:tracking-[0.12em] lg:text-7xl lg:tracking-[0.15em] 2xl:text-[88px] 2xl:tracking-[0.15em]">
+        {/* H1 — Noto Serif JP Bold, 28px SP / 36px PC, #FFFFFF + 食卓 #D4AF37, 0.04em, 1.4 leading.
+            CSS animation (not framer-motion) so Lighthouse detects it as an LCP candidate. */}
+        <h1 className="hero-h1 text-shadow-hero mb-4 font-[family-name:var(--font-noto-serif)] text-[28px] font-bold leading-[1.4] tracking-[0.04em] text-foreground sm:text-[36px]">
           {t(
             <>マスターの<span className="text-gold">食卓</span>へ</>,
             <>An evening at <span className="text-gold">Master Owly&apos;s</span> table</>
           )}
         </h1>
 
+        {/* Tagline — Noto Serif JP Regular 15px #CBB98A 0.06em */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.0, delay: 0.5 }}
-          className="mb-4 font-serif text-base font-normal tracking-[0.02em] text-text-secondary text-shadow-hero sm:text-xl sm:tracking-[0.05em]"
+          className="mb-6 font-[family-name:var(--font-noto-serif)] text-[15px] font-normal leading-relaxed tracking-[0.06em] text-gold-soft text-shadow-hero"
         >
           {t(SITE.tagline.ja, SITE.tagline.en)}
         </motion.p>
 
+        {/* Price — Noto Serif JP Medium 16px #D4AF37 0.06em */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mb-8 text-shadow-hero font-[family-name:var(--font-cormorant),var(--font-shippori),serif] text-sm tracking-[0.1em] text-gold/90 sm:text-base sm:tracking-[0.15em]"
+          className="mb-6 font-[family-name:var(--font-noto-serif)] text-[16px] font-medium tracking-[0.06em] text-gold text-shadow-hero"
         >
           {COURSE_PRICE.amount}
-          <span className="ml-1 text-gold/60 text-[0.75em]">PHP</span>
-          <span className="mx-3 text-gold/50">|</span>
+          <span className="ml-1 text-gold/70 text-[0.8em]">PHP</span>
+          <span className="mx-3 text-gold/60">|</span>
           {t("全8コース・約90分", "8 courses · 90 minutes")}
         </motion.p>
 
-        {/* Ornate horizontal divider between price and CTA stack. */}
+        {/* Ornate divider between price and CTA stack — diamonds at both ends */}
         <motion.div
           initial={{ opacity: 0, scaleX: 0 }}
           animate={{ opacity: 1, scaleX: 1 }}
-          transition={{ duration: 1.4, delay: 0.6 }}
-          className="ornate-divider mb-8 mx-auto w-full max-w-md"
+          transition={{ duration: 1.4, delay: 0.55 }}
+          className="ornate-divider mx-auto mb-8 w-[88%] max-w-md"
           aria-hidden="true"
         >
-          <span className="text-xs text-gold/70">◆</span>
+          <span className="ornate-diamond" />
+          <span className="ornate-diamond" />
         </motion.div>
 
+        {/* CTA stack — 88% width, 56px tall, 4px rounded */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.35 }}
-          className="mx-auto flex w-full max-w-md flex-col items-stretch gap-3"
+          className="mx-auto flex w-[88%] max-w-md flex-col items-stretch gap-3"
         >
           <a
             href="#reservation"
-            className="btn-gold-ornate inline-flex items-center justify-between gap-2 px-8 py-4 text-sm tracking-[0.2em]"
+            className="btn-gold-ornate flex h-14 items-center justify-center font-[family-name:var(--font-noto-serif)] text-[16px] font-medium tracking-[0.06em]"
           >
-            <span aria-hidden="true" className="w-4" />
-            <span className="flex-1 text-center">{t("ご予約はこちら", "Reserve your seat")}</span>
-            <ChevronRight size={18} aria-hidden="true" />
+            {t("ご予約", "Reserve")}
           </a>
           <a
             href={CONTACT.whatsapp.reservationHref}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("WhatsAppで問い合わせる", "Inquire via WhatsApp")}
-            className="btn-ornate-ghost inline-flex items-center justify-between gap-2 px-8 py-4 text-sm tracking-[0.2em]"
+            className="btn-ornate-ghost flex h-14 items-center justify-center gap-2.5 font-[family-name:var(--font-noto-sans)] text-[16px] font-medium tracking-[0.02em]"
           >
-            <MessageCircle size={16} aria-hidden="true" />
-            <span className="flex-1 text-center">{t("WhatsAppでお問い合わせ", "Inquire via WhatsApp")}</span>
-            <ChevronRight size={18} aria-hidden="true" />
+            <MessageCircle size={18} aria-hidden="true" />
+            <span>WhatsApp</span>
           </a>
         </motion.div>
 
+        {/* Scroll hint — Noto Sans JP #CBB98A */}
         <motion.a
           href="#experience"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}
-          className="mt-6 inline-block text-xs tracking-[0.25em] text-text-secondary text-shadow-hero transition-colors duration-300 hover:text-foreground"
+          className="mt-8 inline-block font-[family-name:var(--font-noto-sans)] text-[13px] tracking-[0.1em] text-gold-soft text-shadow-hero transition-colors duration-300 hover:text-gold"
         >
           {t("体験の流れを見る ↓", "see how the evening unfolds ↓")}
         </motion.a>
 
+        {/* Second ornate divider — before seat-count footnote */}
         <motion.div
           initial={{ opacity: 0, scaleX: 0 }}
           animate={{ opacity: 1, scaleX: 1 }}
-          transition={{ duration: 1.4, delay: 0.85 }}
-          className="gold-line mx-auto mt-10 w-24"
+          transition={{ duration: 1.4, delay: 0.8 }}
+          className="ornate-divider mx-auto mt-10 w-[88%] max-w-md"
           aria-hidden="true"
-        />
+        >
+          <span className="ornate-diamond" />
+          <span className="ornate-diamond" />
+        </motion.div>
 
+        {/* Seat-count footnote — Noto Sans JP Regular 13px #CBB98A 0.12em */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 0.9 }}
-          className="mt-4 text-[11px] tracking-[0.3em] text-text-secondary text-shadow-hero"
+          className="mt-5 font-[family-name:var(--font-noto-sans)] text-[13px] tracking-[0.12em] text-gold-soft text-shadow-hero"
         >
           {t("カウンター8席限定", "Limited to 8 counter seats")}
         </motion.p>

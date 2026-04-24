@@ -1,16 +1,25 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Noto_Sans_JP, Shippori_Mincho } from "next/font/google";
+import { Cinzel, Cormorant_Garamond, Noto_Sans_JP, Noto_Serif_JP, Shippori_Mincho } from "next/font/google";
 import "./globals.css";
 
-// Cormorant: primary display + numerals (LOGO, stats). Preloaded.
-const cormorant = Cormorant_Garamond({
+// Cinzel: primary Latin display (logo, numerals, eyebrow). Per TOP design spec.
+const cinzel = Cinzel({
   subsets: ["latin"],
-  weight: ["300", "500"],
-  variable: "--font-cormorant",
+  weight: ["400", "500"],
+  variable: "--font-cinzel",
   display: "swap",
 });
 
-// Noto Sans JP: body JA. Swap + lazy (no preload) to prevent CJK subset preload explosion.
+// Noto Serif JP: JA display (H1, tagline, price, button label). Per TOP design spec.
+const notoSerifJP = Noto_Serif_JP({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-noto-serif",
+  display: "swap",
+  preload: false,
+});
+
+// Noto Sans JP: JA body. Swap + lazy to avoid CJK preload bloat.
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
   weight: ["400", "500"],
@@ -19,10 +28,16 @@ const notoSansJP = Noto_Sans_JP({
   preload: false,
 });
 
-// Shippori Mincho: purely decorative JA display (sign-offs, course names).
-// `display: optional` — browser waits max ~100ms; if the font isn't ready,
-// fallback is used permanently. Removes Shippori from the critical render path
-// without sacrificing brand feel on repeat visits.
+// Legacy fonts — kept for components outside Hero that still reference
+// --font-cormorant / --font-shippori (About, Experience, Menu, etc.).
+// Once the full design spec cascades to all sections, these can be retired.
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "500"],
+  variable: "--font-cormorant",
+  display: "swap",
+  preload: false,
+});
 const shipporiMincho = Shippori_Mincho({
   subsets: ["latin"],
   weight: ["400", "600"],
@@ -119,7 +134,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${cormorant.variable} ${notoSansJP.variable} ${shipporiMincho.variable}`}>
+    <html lang="ja" className={`${cinzel.variable} ${notoSerifJP.variable} ${notoSansJP.variable} ${cormorant.variable} ${shipporiMincho.variable}`}>
       <head>
         <meta name="theme-color" content="#0a0a0a" />
         <script
