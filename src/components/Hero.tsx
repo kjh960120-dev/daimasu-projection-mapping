@@ -128,7 +128,7 @@ export default function Hero() {
         >
           <a
             href="#reservation"
-            className="inline-flex items-center gap-2 bg-gold px-10 py-4 text-sm tracking-[0.2em] text-background transition-all duration-300 hover:bg-gold-light"
+            className="btn-gold-ornate inline-flex items-center gap-2 px-10 py-4 text-sm tracking-[0.2em]"
           >
             {t("ご予約", "Reserve")}
           </a>
