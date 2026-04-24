@@ -46,3 +46,10 @@ next-env.d.ts
 lighthouse-*
 lh-*.json
 lh-*.html
+
+# Designer reference files dropped into the repo root by accident
+# (actual assets live under public/images/ — see component-inventory.md)
+/大桝BARページ.png
+/*.png
+/*.psd
+/*.fig
