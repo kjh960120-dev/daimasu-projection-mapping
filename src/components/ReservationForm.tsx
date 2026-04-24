@@ -144,27 +144,39 @@ export default function ReservationForm() {
     setNotes("");
   };
 
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (status === "sending" || !selectedDate) return;
+    if (status === "sending") return;
+    if (!selectedDate) {
+      setAttemptedSubmit(true);
+      // Scroll the calendar into view so the user can see what's missing.
+      document
+        .querySelector(".rdp-daimasu")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     setStatus("sending");
     const msg = buildTelegramMessage({ name, phone, date: selectedDate, seating, party, notes });
     const ok = await sendToTelegram(msg);
     if (ok) {
       setStatus("success");
       reset();
+      setAttemptedSubmit(false);
       setTimeout(() => setStatus("idle"), 8000);
     } else {
       setStatus("error");
     }
   };
 
-  const labelClass = "text-xs font-medium tracking-[0.15em] text-gold/90 uppercase";
+  const labelClass = "font-[family-name:var(--font-noto-serif)] text-[13px] font-medium tracking-[0.14em] text-gold";
   const inputClass =
-    "w-full border border-border bg-background/50 px-3 py-2.5 text-base sm:text-sm text-foreground placeholder:text-text-muted/70 focus:border-gold/50 focus:outline-none focus:ring-1 focus:ring-gold/30 transition-colors";
+    "w-full border border-border bg-background/50 px-4 py-3 text-base text-foreground placeholder:text-text-muted/70 focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors";
+  const dateMissing = !selectedDate;
 
   return (
-    <div className="flex flex-col gap-6 border border-border bg-surface/50 p-8">
+    <div className="flex flex-col gap-7 border border-border bg-surface/50 p-6 sm:p-8">
       <div>
         <p className="mb-2 text-xs tracking-[0.3em] text-gold/70">
           {t("ご予約", "RESERVATIONS")}
@@ -177,17 +189,137 @@ export default function ReservationForm() {
         </h3>
         <p className="text-sm leading-relaxed text-text-secondary">
           {t(
-            "下記ご記入の上『予約を送信』を押すと、スタッフに直接通知されます。24時間以内にご返答いたします。",
-            "Fill in the details below and press Send — our staff will be notified instantly and reply within 24 hours."
+            "ご希望の日・時間・人数をお選びいただき、お名前とご連絡先をご入力ください。スタッフに直接通知され、24時間以内にご返答いたします。",
+            "Pick a date, a seating, and party size — then tell us how to reach you. Our staff is notified instantly and replies within 24 hours."
           )}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        {/* Step 1 — Date (primary decision, first). 44px tap targets via globals.css. */}
+        <div className="flex flex-col gap-3">
+          <label className={labelClass}>
+            {t("1. ご希望日", "1. Preferred date")}
+            <span className="ml-1 text-gold/40">*</span>
+          </label>
+          <div
+            className="rdp-daimasu flex justify-center border border-border bg-background/40 p-3 sm:p-4"
+            aria-live="polite"
+          >
+            <DayPicker
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              disabled={{ before: minDate, after: maxDate }}
+              weekStartsOn={1}
+              numberOfMonths={1}
+              showOutsideDays
+              required
+            />
+          </div>
+          {/* Prominent selected-date banner replaces the tiny 11px line. */}
+          {selectedDate ? (
+            <div className="flex items-center justify-between border border-gold/40 bg-gold/5 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <span aria-hidden="true" className="inline-block h-2 w-2 rotate-45 bg-gold" />
+                <span className="font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.06em] text-gold">
+                  {formatHumanDate(selectedDate, lang)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDate(undefined)}
+                className="text-xs tracking-[0.1em] text-gold/60 underline underline-offset-4 transition-colors hover:text-gold"
+              >
+                {t("変更", "Change")}
+              </button>
+            </div>
+          ) : (
+            <p className="text-[12px] leading-relaxed tracking-[0.04em] text-text-secondary">
+              {t(
+                "本日から3ヶ月先までご予約いただけます。",
+                "Available from today up to three months ahead."
+              )}
+            </p>
+          )}
+        </div>
+
+        {/* Step 2 — Seating (2 options as a segmented toggle, 56px tall). */}
+        <div className="flex flex-col gap-3">
+          <label className={labelClass}>
+            {t("2. ご希望時間", "2. Seating")}
+            <span className="ml-1 text-gold/40">*</span>
+          </label>
+          <div
+            role="radiogroup"
+            aria-label={t("ご希望時間", "Seating")}
+            className="grid grid-cols-2 gap-3"
+          >
+            {SEATINGS.map((s) => {
+              const active = seating === s.value;
+              return (
+                <button
+                  key={s.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setSeating(s.value)}
+                  className={
+                    active
+                      ? "btn-gold-ornate flex h-14 items-center justify-center font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.1em]"
+                      : "btn-ornate-ghost flex h-14 items-center justify-center font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.1em]"
+                  }
+                >
+                  {t(s.label.ja, s.label.en)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Step 3 — Party size (chip row, 1–8 big tap targets). */}
+        <div className="flex flex-col gap-3">
+          <label className={labelClass}>
+            {t("3. 人数", "3. Party size")}
+            <span className="ml-1 text-gold/40">*</span>
+          </label>
+          <div
+            role="radiogroup"
+            aria-label={t("人数", "Party size")}
+            className="flex flex-wrap gap-2"
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => {
+              const v = String(n);
+              const active = party === v;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setParty(v)}
+                  className={
+                    active
+                      ? "btn-gold-ornate inline-flex h-12 min-w-12 items-center justify-center px-3 font-[family-name:var(--font-cinzel)] text-base font-medium tracking-[0.04em]"
+                      : "btn-ornate-ghost inline-flex h-12 min-w-12 items-center justify-center px-3 font-[family-name:var(--font-cinzel)] text-base font-medium tracking-[0.04em]"
+                  }
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] tracking-[0.04em] text-text-muted">
+            {t("※ カウンター8席限定・最大8名まで", "Counter seats up to 8 guests.")}
+          </p>
+        </div>
+
+        {/* Step 4 — Contact (name + phone; less committal, moved after decision). */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label htmlFor="res-name" className={labelClass}>
-              {t("お名前", "Name")} *
+              {t("4. お名前", "4. Name")}
+              <span className="ml-1 text-gold/40">*</span>
             </label>
             <input
               id="res-name"
@@ -201,9 +333,10 @@ export default function ReservationForm() {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <label htmlFor="res-phone" className={labelClass}>
-              {t("電話番号", "Phone")} *
+              {t("5. 電話番号", "5. Phone")}
+              <span className="ml-1 text-gold/40">*</span>
             </label>
             <input
               id="res-phone"
@@ -218,81 +351,10 @@ export default function ReservationForm() {
               pattern="[+0-9 ()-]{7,20}"
             />
           </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="res-seating" className={labelClass}>
-              {t("ご希望時間", "Seating")} *
-            </label>
-            <select
-              id="res-seating"
-              value={seating}
-              onChange={(e) => setSeating(e.target.value)}
-              required
-              className={inputClass}
-            >
-              {SEATINGS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {t(s.label.ja, s.label.en)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="res-party" className={labelClass}>
-              {t("人数", "Party size")} *
-            </label>
-            <select
-              id="res-party"
-              value={party}
-              onChange={(e) => setParty(e.target.value)}
-              required
-              className={inputClass}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                <option key={n} value={String(n)}>
-                  {n} {lang === "ja" ? "名" : n === 1 ? "guest" : "guests"}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
+        {/* Step 5 — Optional notes. */}
         <div className="flex flex-col gap-2">
-          <label className={labelClass}>
-            {t("ご希望日", "Preferred date")} *
-          </label>
-          <div
-            className="rdp-daimasu flex justify-center border border-border bg-background/40 p-3"
-            aria-live="polite"
-          >
-            <DayPicker
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              disabled={{ before: minDate, after: maxDate }}
-              weekStartsOn={1}
-              numberOfMonths={1}
-              showOutsideDays
-              required
-            />
-          </div>
-          <p className="text-[11px] tracking-wide text-text-muted">
-            {selectedDate ? (
-              <span className="text-gold/80">
-                {t("選択済: ", "Selected: ")}
-                {formatHumanDate(selectedDate, lang)}
-              </span>
-            ) : (
-              t(
-                "※ 本日〜3ヶ月先までお選びいただけます",
-                "Pick any date from today up to 3 months ahead."
-              )
-            )}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
           <label htmlFor="res-notes" className={labelClass}>
             {t("備考 (任意)", "Notes (optional)")}
           </label>
@@ -310,11 +372,12 @@ export default function ReservationForm() {
           />
         </div>
 
-        <div className="flex flex-col gap-3 pt-1">
+        <div className="flex flex-col gap-3 pt-2">
           <button
             type="submit"
-            disabled={status === "sending" || status === "success" || !selectedDate}
-            className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-8 py-4 font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={status === "sending" || status === "success"}
+            aria-disabled={dateMissing}
+            className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-8 py-4 font-[family-name:var(--font-noto-serif)] text-base font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {status === "sending" ? (
               <>
@@ -333,6 +396,21 @@ export default function ReservationForm() {
               </>
             )}
           </button>
+
+          {/* Helper when date missing — appears after first submit attempt to
+              avoid pre-scolding, then stays until a date is picked. */}
+          {attemptedSubmit && dateMissing && (
+            <p
+              role="alert"
+              className="flex items-center gap-2 text-sm tracking-[0.04em] text-gold"
+            >
+              <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rotate-45 bg-gold" />
+              {t(
+                "まずご希望日をお選びください。",
+                "Please pick a date above first."
+              )}
+            </p>
+          )}
 
           {status === "success" && (
             <div
