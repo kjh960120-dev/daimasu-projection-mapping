@@ -78,7 +78,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.5, delay: 0.3 }}
-          className="text-shadow-hero inline-flex min-w-[214px] items-center justify-center border border-[rgba(212,175,55,0.72)] bg-black/25 px-4 py-2.5 font-[family-name:var(--font-noto-serif)] text-[13px] tracking-[0.16em] text-gold backdrop-blur-[4px] shadow-[inset_0_0_18px_rgba(212,175,55,0.08)] sm:min-w-[250px] sm:px-5 sm:py-3 sm:text-[14px]"
+          className="text-shadow-hero inline-flex min-w-[214px] items-center justify-center border border-[rgba(212,175,55,0.72)] bg-black/25 px-4 py-2.5 font-[family-name:var(--font-noto-serif)] text-[13px] font-medium tracking-[0.14em] text-gold backdrop-blur-[4px] shadow-[inset_0_0_18px_rgba(212,175,55,0.08)] sm:min-w-[250px] sm:px-5 sm:py-3 sm:text-[14px]"
         >
           <span>{CURRENT_CHAPTER.number}</span>
           <span className="mx-3 text-[#F2D47A]/60 sm:mx-[14px]">|</span>
@@ -99,7 +99,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.15 }}
-          className="mb-[22px] font-[family-name:var(--font-noto-sans)] text-[13px] tracking-[0.14em] text-foreground text-shadow-hero sm:text-[15px]"
+          className="mb-[22px] font-[family-name:var(--font-noto-serif)] text-[13px] font-medium tracking-[0.14em] text-foreground text-shadow-hero sm:text-[15px]"
         >
           {t("プロジェクションマッピング・ダイニング", "PROJECTION MAPPING DINING")}
         </motion.p>
@@ -140,7 +140,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.0, delay: 0.5 }}
-          className="mb-6 whitespace-nowrap font-[family-name:var(--font-noto-serif)] leading-[1.8] tracking-[0.04em] text-foreground text-shadow-hero [font-size:clamp(12px,3.6vw,22px)] sm:tracking-[0.08em]"
+          className="mb-6 whitespace-nowrap font-[family-name:var(--font-noto-serif)] font-normal leading-[1.8] tracking-[0.06em] text-foreground text-shadow-hero [font-size:clamp(12px,3.6vw,22px)]"
         >
           {t("マスター・アウリと綴る、九十分の懐石劇場", "Ninety minutes. Eight courses. One owl with a golden feather pen.")}
         </motion.p>
@@ -150,7 +150,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-shadow-hero-gold mb-8 font-[family-name:var(--font-cinzel),var(--font-noto-serif),serif] tracking-[0.07em] text-gold [font-size:clamp(17px,4vw,23px)]"
+          className="text-shadow-hero-gold mb-8 font-[family-name:var(--font-cinzel),var(--font-noto-serif),serif] font-medium tracking-[0.06em] text-gold [font-size:clamp(17px,4vw,23px)]"
         >
           {COURSE_PRICE.amount}
           <span className="ml-1 text-[0.78em] tracking-[0.12em]">PHP</span>
@@ -195,7 +195,7 @@ export default function Hero() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("WhatsAppで問い合わせる", "Inquire via WhatsApp")}
-            className="btn-ornate-ghost flex h-[58px] items-center justify-between gap-3 px-6 font-[family-name:var(--font-noto-sans)] text-[15px] font-medium tracking-[0.06em] sm:h-16 sm:text-[17px]"
+            className="btn-ornate-ghost flex h-[58px] items-center justify-between gap-3 px-6 font-[family-name:var(--font-noto-serif)] text-[15px] font-medium tracking-[0.06em] sm:h-16 sm:text-[17px]"
           >
             <MessageCircle size={18} aria-hidden="true" />
             <span className="flex-1 text-center">{t("WhatsAppでお問い合わせ", "Inquire via WhatsApp")}</span>
@@ -209,7 +209,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}
-          className="mb-[42px] inline-block border-b border-[rgba(212,175,55,0.8)] pb-2 font-[family-name:var(--font-noto-sans)] text-[14px] tracking-[0.08em] text-foreground/85 transition-colors duration-300 hover:text-foreground"
+          className="mb-[42px] inline-block border-b border-[rgba(212,175,55,0.8)] pb-2 font-[family-name:var(--font-noto-serif)] text-[14px] font-normal tracking-[0.06em] text-foreground/85 transition-colors duration-300 hover:text-foreground"
         >
           {t("体験の流れを見る ↓", "see how the evening unfolds ↓")}
         </motion.a>
@@ -219,7 +219,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.85 }}
-          className="limited-frame mx-auto font-[family-name:var(--font-noto-serif)] text-[15px] tracking-[0.16em] text-foreground text-shadow-hero sm:text-[17px]"
+          className="limited-frame mx-auto font-[family-name:var(--font-noto-serif)] text-[15px] font-medium tracking-[0.14em] text-foreground text-shadow-hero sm:text-[17px]"
         >
           {t("カウンター8席限定", "Limited to 8 counter seats")}
         </motion.p>
