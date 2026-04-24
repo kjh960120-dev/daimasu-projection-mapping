@@ -88,7 +88,7 @@ export default function About() {
             initial={{ opacity: 0, y: 10 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7 }}
-            className="mb-3 font-[family-name:var(--font-noto-sans)] text-[13px] font-medium leading-[1.6] tracking-[0.16em] text-gold text-shadow-hero sm:text-[14px]"
+            className="mb-3 font-[family-name:var(--font-noto-serif)] text-[13px] font-medium leading-[1.6] tracking-[0.16em] text-gold text-shadow-hero sm:text-[14px]"
           >
             {t("マスター・アウリの食卓", "MASTER OWLY'S TABLE")}
           </motion.p>
@@ -129,7 +129,7 @@ export default function About() {
             initial={{ opacity: 0, y: 10 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.35 }}
-            className="mb-7 max-w-[720px] font-[family-name:var(--font-noto-sans)] text-[14px] font-normal leading-[1.9] text-gold-soft text-shadow-hero sm:text-[15px] lg:text-[16px]"
+            className="mb-7 max-w-[720px] font-[family-name:var(--font-noto-serif)] text-[14px] font-normal leading-[1.9] text-gold-soft text-shadow-hero sm:text-[15px] lg:text-[16px]"
           >
             {t(
               "8メートルの檜カウンターに、八つの場面が次々と浮かび上がる九十分の懐石劇場。先付の桜から甘味の宵まで、一皿ごとにマスター・アウリの物語が展開し、その余韻とともに料理をお楽しみいただきます。",
@@ -142,7 +142,7 @@ export default function About() {
             initial={{ opacity: 0, y: 10 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: 0.45 }}
-            className="mb-10 max-w-[720px] font-[family-name:var(--font-noto-sans)] text-[14px] font-normal leading-[1.9] text-gold-soft text-shadow-hero sm:text-[15px] lg:text-[16px]"
+            className="mb-10 max-w-[720px] font-[family-name:var(--font-noto-serif)] text-[14px] font-normal leading-[1.9] text-gold-soft text-shadow-hero sm:text-[15px] lg:text-[16px]"
           >
             {t(
               "黄金の単眼鏡を掛けた一羽の梟が、桜の庭、寺院の勝手口、深き蒼の海底、夜の焚き火、冬の銀景色を巡ります。見事な登場、可笑しな失敗、魔法のような解決 — 物語が収まるその瞬間、完璧な一皿が目の前に届きます。",
@@ -177,7 +177,7 @@ export default function About() {
                 <p className="font-[family-name:var(--font-cinzel)] font-medium tracking-[0.04em] text-gold [font-size:clamp(30px,5vw,38px)] [text-shadow:0_0_16px_rgba(212,175,55,0.2)]">
                   {stat.value}
                 </p>
-                <p className="mt-2 font-[family-name:var(--font-noto-sans)] text-[12px] font-medium tracking-[0.16em] text-gold-soft sm:text-[13px]">
+                <p className="mt-2 font-[family-name:var(--font-noto-serif)] text-[12px] font-medium tracking-[0.16em] text-gold-soft sm:text-[13px]">
                   {t(stat.label.ja, stat.label.en)}
                 </p>
               </div>
