@@ -19,13 +19,14 @@ const notoSerifJP = Noto_Serif_JP({
   preload: false,
 });
 
-// Noto Sans JP: JA body. Swap + lazy to avoid CJK preload bloat.
+// Noto Sans JP: JA body. Preloaded so first render of About / Experience
+// body copy uses the designed font instead of system Hiragino fallback.
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-noto-sans",
   display: "swap",
-  preload: false,
+  preload: true,
 });
 
 // Legacy fonts — kept for components outside Hero that still reference

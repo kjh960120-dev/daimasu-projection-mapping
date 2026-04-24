@@ -36,9 +36,7 @@ export default function About() {
       style={{ background: "#0B0B0B" }}
     >
       {/* Background: the Owly-at-counter image fills the section.
-          The image is composed with ~55% dark empty space on the left so
-          text can overlay cleanly. We shift background-position so the
-          owl sits on the right on PC and slightly off-center on mobile. */}
+          The image has ~55% dark empty space on the left so text can overlay. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"
@@ -50,9 +48,8 @@ export default function About() {
         }}
       />
 
-      {/* Left-side dark gradient that anchors the text column on PC.
-          On mobile we darken more broadly so copy stays legible over the
-          character mid-band. */}
+      {/* Left-side dark gradient — anchors the text column on PC.
+          Mobile reads it as a broader darkening. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"
@@ -61,7 +58,19 @@ export default function About() {
             "linear-gradient(90deg, rgba(11,11,11,0.96) 0%, rgba(11,11,11,0.88) 35%, rgba(11,11,11,0.55) 55%, rgba(11,11,11,0.15) 72%, rgba(11,11,11,0.05) 100%)",
         }}
       />
-      {/* Mobile-only extra vignette — owl face still visible but text area reads. */}
+
+      {/* Top / bottom vertical fade — blends the About image into the dark
+          hero above and the dark Experience section below with no hard edge. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(11,11,11,1) 0%, rgba(11,11,11,0.6) 6%, rgba(11,11,11,0) 18%, rgba(11,11,11,0) 82%, rgba(11,11,11,0.6) 94%, rgba(11,11,11,1) 100%)",
+        }}
+      />
+
+      {/* Mobile-only extra vignette — owl face still visible, text area readable. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 lg:hidden"
