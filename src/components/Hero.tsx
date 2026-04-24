@@ -11,7 +11,31 @@ export default function Hero() {
   return (
     <section className="relative flex h-screen items-center justify-center overflow-hidden">
       <div className="absolute inset-0" style={{ contain: "paint" }} aria-hidden="true">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
+        <video
+          className="hero-bg-video absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster="/videos/hero-poster.jpg"
+        >
+          <source src="/videos/hero-highlight-720.mp4" media="(max-width: 768px)" type="video/mp4" />
+          <source src="/videos/hero-highlight-1080.mp4" type="video/mp4" />
+        </video>
+        {/* Darken video so body/price text retains contrast against bright scenes (flame, surf). */}
+        <div className="absolute inset-0 bg-black/60" />
+        {/* Radial dim around the centered text column — boosts the thin gold price line
+            without flattening the video's edges. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 70%)",
+          }}
+        />
+        {/* Edge-fade gradient keeps chrome-on-black aesthetic and blends into next section. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background" />
         <motion.div
           animate={{ opacity: [0.2, 0.4, 0.2] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}

@@ -206,4 +206,8 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* Reduced-motion users see the poster frame instead of the looping reel. */
+  .hero-bg-video {
+    display: none;
+  }
 }
