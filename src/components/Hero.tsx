@@ -5,6 +5,17 @@ import { ChevronDown, ChevronRight, MessageCircle } from "lucide-react";
 import { CURRENT_CHAPTER, COURSE_PRICE, CONTACT } from "@/lib/constants";
 import { useLang } from "@/lib/language";
 
+// Gold gradient applied inline to bypass Tailwind v4 / Turbopack class-purging quirks
+// that were stripping `.text-gold-gradient-title` from the compiled stylesheet.
+const goldGradientStyle: React.CSSProperties = {
+  background: "linear-gradient(180deg, #fff0ad 0%, #d4af37 45%, #9d7418 100%)",
+  WebkitBackgroundClip: "text",
+  backgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+  color: "transparent",
+  textShadow: "none",
+};
+
 export default function Hero() {
   const { t } = useLang();
 
@@ -91,10 +102,12 @@ export default function Hero() {
 
         {/* H1 — Noto Serif JP Bold, clamp(42px, 11vw, 72px), 0.04em, 1.15 leading.
             CSS animation (not framer-motion) so Lighthouse detects it as an LCP candidate. */}
-        <h1 className="hero-h1 mb-[22px] font-[family-name:var(--font-noto-serif)] font-bold leading-[1.15] tracking-[0.04em] text-foreground [font-size:clamp(42px,11vw,72px)] [text-shadow:0_4px_20px_rgba(0,0,0,0.75),0_0_18px_rgba(255,255,255,0.12)]">
+        <h1
+          className="hero-h1 mb-[22px] whitespace-nowrap font-[family-name:var(--font-noto-serif)] font-bold leading-[1.15] tracking-[0.02em] text-foreground [font-size:clamp(30px,9vw,72px)] [text-shadow:0_4px_20px_rgba(0,0,0,0.75),0_0_18px_rgba(255,255,255,0.12)]"
+        >
           {t(
-            <>マスターの<span className="text-gold-gradient-title">食卓</span>へ</>,
-            <>An evening at <span className="text-gold-gradient-title">Master Owly&apos;s</span> table</>
+            <>マスターの<span style={goldGradientStyle}>食卓</span>へ</>,
+            <>An evening at <span style={goldGradientStyle}>Master Owly&apos;s</span> table</>
           )}
         </h1>
 
