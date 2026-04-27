@@ -66,7 +66,7 @@ export default function Header() {
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="flex h-20 items-center justify-between">
-          <a href="#top" className="relative z-10 block" aria-label="DAIMASU — Back to top">
+          <a href="#top" className="relative z-[60] block" aria-label="DAIMASU — Back to top">
             {/* eslint-disable-next-line @next/next/no-img-element -- static export, small brand mark */}
             <img
               src="/logo.png"
@@ -111,7 +111,7 @@ export default function Header() {
           <button
             ref={toggleRef}
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="relative z-10 inline-flex min-h-[44px] min-w-[44px] items-center justify-center -m-2 p-2 text-foreground md:hidden"
+            className="relative z-[60] inline-flex min-h-[44px] min-w-[44px] items-center justify-center -m-2 p-2 text-foreground md:hidden"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
           >
@@ -127,43 +127,101 @@ export default function Header() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-background/98 backdrop-blur-lg md:hidden"
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-40 flex flex-col bg-background/98 backdrop-blur-lg md:hidden"
           >
-            <nav className="flex flex-col items-center gap-8">
+            {/* Header spacer — keeps logo + X legible against overlay */}
+            <div className="h-20 shrink-0" />
+
+            {/* Top ornate divider */}
+            <motion.div
+              initial={{ opacity: 0, scaleX: 0 }}
+              animate={{ opacity: 1, scaleX: 1 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="flex shrink-0 justify-center py-5"
+            >
+              <span aria-hidden="true" className="ornate-divider" />
+            </motion.div>
+
+            {/* Eyebrow */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="shrink-0 text-center font-[family-name:var(--font-cinzel)] text-[11px] font-medium tracking-[0.32em] text-gold-soft"
+            >
+              MASTER OWLY&apos;S TABLE
+            </motion.p>
+
+            {/* Nav items — fill vertical space, centered */}
+            <nav className="flex flex-1 flex-col items-center justify-center gap-2 px-8">
               {NAV_ITEMS.map((item, i) => (
-                <motion.a
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="text-lg tracking-[0.2em] text-text-secondary transition-colors hover:text-foreground"
-                >
-                  {lang === "ja" ? item.label : item.labelEn}
-                </motion.a>
+                <div key={item.href} className="flex flex-col items-center">
+                  <motion.a
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 + i * 0.06 }}
+                    className="block py-[14px] font-[family-name:var(--font-noto-serif)] text-[22px] font-normal tracking-[0.28em] text-foreground/92 transition-colors hover:text-gold"
+                  >
+                    {lang === "ja" ? item.label : item.labelEn}
+                  </motion.a>
+                  {i < NAV_ITEMS.length - 1 && (
+                    <motion.span
+                      aria-hidden="true"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 + i * 0.06 }}
+                      className="inline-block h-[5px] w-[5px] rotate-45 bg-gold/35"
+                    />
+                  )}
+                </div>
               ))}
-              <motion.button
-                onClick={() => { setLang(lang === "ja" ? "en" : "ja"); }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: NAV_ITEMS.length * 0.1 }}
-                className="text-sm tracking-wider text-text-muted transition-colors hover:text-foreground"
-                aria-label={lang === "ja" ? "Switch to English (EN)" : "日本語に切替 (JA)"}
+            </nav>
+
+            {/* Footer — divider + CTA + language + hours */}
+            <div className="shrink-0 px-7 pb-9 pt-2">
+              <motion.div
+                initial={{ opacity: 0, scaleX: 0 }}
+                animate={{ opacity: 1, scaleX: 1 }}
+                transition={{ duration: 0.6, delay: 0.55 }}
+                className="mb-7 flex justify-center"
               >
-                {lang === "ja" ? "English" : "日本語"}
-              </motion.button>
+                <span aria-hidden="true" className="ornate-divider" />
+              </motion.div>
+
               <motion.a
                 href="#reservation"
                 onClick={() => setMobileOpen(false)}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: (NAV_ITEMS.length + 1) * 0.1 }}
-                className="btn-gold-ornate mt-2 inline-flex items-center px-8 py-3 font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.14em]"
+                transition={{ delay: 0.6 }}
+                className="btn-gold-ornate mb-6 flex h-[56px] w-full items-center justify-center font-[family-name:var(--font-noto-serif)] text-[15px] font-medium tracking-[0.18em]"
               >
                 {t("ご予約", "Book a Table")}
               </motion.a>
-            </nav>
+
+              <motion.button
+                onClick={() => setLang(lang === "ja" ? "en" : "ja")}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                aria-label={lang === "ja" ? "Switch to English" : "日本語に切替"}
+                className="mx-auto mb-4 block font-[family-name:var(--font-cinzel)] text-[11px] font-medium tracking-[0.32em] text-gold-soft transition-colors hover:text-gold"
+              >
+                {lang === "ja" ? "ENGLISH" : "日本語"}
+              </motion.button>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.75 }}
+                className="text-center font-[family-name:var(--font-noto-serif)] text-[10px] tracking-[0.2em] text-gold-dark/70"
+              >
+                {t("火〜日 · 17:30 / 19:30", "TUE–SUN · 17:30 / 19:30")}
+              </motion.p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
