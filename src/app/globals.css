@@ -346,6 +346,75 @@ body {
   }
 }
 
+/* ─── Admin theme — operator UI is utility, not luxury ─────────────────
+   The public site (DAIMASU brand) uses warm gold + dark only. The admin
+   panel is for daily ops; needs both light (day) and dark (night) modes.
+
+   Scope: applied via `[data-admin-theme="light|dark"]` on the admin
+   layout's root div. Tokens override the public palette ONLY inside that
+   scope — public site is unaffected.
+
+   Light mode = primary recommendation (Linear / Stripe / Datadog style).
+   Dark mode = night-shift / dim-bar usability. */
+
+[data-admin-theme="light"] {
+  --background:      #fafafa;
+  --foreground:      #18181b;
+  --text-secondary:  #52525b;
+  --text-muted:      #71717a;
+  --surface:         #ffffff;
+  --card:            #ffffff;
+  --border:          #e4e4e7;
+  --border-gold:     rgba(160, 128, 32, 0.35);
+  /* Gold darkened for contrast on white. */
+  --gold:            #a08020;
+  --gold-light:      #c9a334;
+  --gold-soft:       #806818;
+  --gold-dark:       #5a4810;
+}
+
+[data-admin-theme="dark"] {
+  /* Slightly de-warmed dark for operator UI — less gold tint, more
+     neutral grey, so data tables read first and brand reads second. */
+  --background:      #0a0a0a;
+  --foreground:      #fafafa;
+  --text-secondary:  #d4d4d8;
+  --text-muted:      #a1a1aa;
+  --surface:         #18181b;
+  --card:            #1f1f23;
+  --border:          #2a2a2f;
+  --border-gold:     rgba(212, 175, 55, 0.30);
+}
+
+/* Status colors flip per theme so red/amber/green stay readable on both
+   light cards and dark surfaces. Used by Tailwind utility overrides
+   below + by the .admin-status-* classes. */
+[data-admin-theme="light"] {
+  --status-warn:     #b45309;  /* amber-700  */
+  --status-error:    #dc2626;  /* red-600    */
+  --status-success:  #15803d;  /* green-700  */
+  --status-info:     #1d4ed8;  /* blue-700   */
+  --status-pending:  #a16207;  /* yellow-700 */
+}
+[data-admin-theme="dark"] {
+  --status-warn:     #fbbf24;  /* amber-400 */
+  --status-error:    #f87171;  /* red-400   */
+  --status-success:  #4ade80;  /* green-400 */
+  --status-info:     #60a5fa;  /* blue-400  */
+  --status-pending:  #facc15;  /* yellow-400 */
+}
+
+/* Tailwind status utilities used in admin pages, retargeted per theme.
+   Less invasive than rewriting every file's text-red-400 to a semantic
+   class. Specificity is `[data-admin-theme] .text-red-400`, beats raw
+   utility from Tailwind. */
+[data-admin-theme] .text-red-400        { color: var(--status-error)   !important; }
+[data-admin-theme] .text-amber-400      { color: var(--status-warn)    !important; }
+[data-admin-theme] .text-green-400      { color: var(--status-success) !important; }
+[data-admin-theme] .text-yellow-400     { color: var(--status-pending) !important; }
+[data-admin-theme] .text-red-400\/90    { color: color-mix(in srgb, var(--status-error)   90%, transparent) !important; }
+[data-admin-theme] .text-red-400\/80    { color: color-mix(in srgb, var(--status-error)   80%, transparent) !important; }
+
 /* ─── Admin typography tokens ────────────────────────────────────────────
    Jobs-lens audit (2026-04-29): admin pages had 56× text-[10px] and zero
    text-base. Floor moved to 13px; only timestamps/IDs may go to 11px.

@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { getAdmin } from "@/lib/auth/admin";
 import { getAdminLang, ti } from "@/lib/auth/admin-lang";
+import { getAdminTheme } from "@/lib/auth/admin-theme";
 import { mockAdmin } from "./preview-mode";
 import { LangToggle } from "./lang-toggle";
+import { ThemeToggle } from "./theme-toggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,9 +27,10 @@ export default async function AdminLayout({
 }) {
   const admin = PREVIEW_MODE ? mockAdmin : await getAdmin();
   const lang = await getAdminLang();
+  const theme = await getAdminTheme();
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div data-admin-theme={theme} className="min-h-screen bg-background text-foreground">
       {admin ? (
         <div className="lg:grid lg:min-h-screen lg:grid-cols-[220px_1fr] print:!block">
           {/* Mobile top bar */}
@@ -40,7 +43,10 @@ export default async function AdminLayout({
                 {ti(lang, "管理画面", "ADMIN PANEL")}
               </p>
             </div>
-            <LangToggle current={lang} />
+            <div className="flex items-center gap-3">
+              <ThemeToggle current={theme} />
+              <LangToggle current={lang} />
+            </div>
           </header>
 
           {/* Mobile horizontal nav scroller */}
@@ -102,7 +108,10 @@ export default async function AdminLayout({
               <p className="truncate text-text-secondary" title={admin.email}>
                 {admin.email}
               </p>
-              <LangToggle current={lang} />
+              <div className="flex items-center justify-between gap-3">
+                <ThemeToggle current={theme} />
+                <LangToggle current={lang} />
+              </div>
               <form action="/admin/logout" method="post">
                 <button
                   type="submit"
