@@ -1,21 +1,18 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { MessageCircle, ArrowUpRight, Send, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { MessageCircle, ArrowUpRight, Send, AlertCircle, Loader2, ShieldCheck } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { useLang } from "@/lib/language";
 import { CONTACT, COURSE_PRICE } from "@/lib/constants";
 
-const TELEGRAM_BOT_TOKEN = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || "";
-const TELEGRAM_CHAT_ID = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID || "";
-
 const SEATINGS = [
-  { value: "17:30", label: { ja: "1部 17:30", en: "Seating 1 · 17:30" } },
-  { value: "19:30", label: { ja: "2部 19:30", en: "Seating 2 · 19:30" } },
+  { value: "s1" as const, label: { ja: "1部 17:30", en: "Seating 1 · 17:30" } },
+  { value: "s2" as const, label: { ja: "2部 19:30", en: "Seating 2 · 19:30" } },
 ];
 
-type Status = "idle" | "sending" | "success" | "error";
+type Status = "idle" | "sending" | "redirecting" | "error";
 
 const ViberIcon = ({ size = 18 }: { size?: number }) => (
   <svg
@@ -43,86 +40,42 @@ function formatHumanDate(d: Date | undefined, lang: "ja" | "en"): string {
   });
 }
 
-function formatManilaNow(): string {
-  return new Date().toLocaleString("en-US", {
-    timeZone: "Asia/Manila",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }) + " MNL";
+/** YYYY-MM-DD in local time (calendar selection is wall-clock, no TZ shift). */
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-// HTML-escape to avoid breaking Telegram HTML parse mode
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+interface ApiOk {
+  ok: true;
+  reservation_id: string;
+  checkout_url: string;
+  cancel_token: string;
 }
-
-function buildTelegramMessage(payload: {
-  name: string;
-  phone: string;
-  date: Date;
-  seating: string;
-  party: string;
-  notes: string;
-}): string {
-  const dateFmt = formatHumanDate(payload.date, "en");
-  return [
-    "<b>DAIMASU 예약 요청 / New Reservation</b>",
-    "━━━━━━━━━━━━━━━━━━━━━",
-    `<b>이름</b>: ${escapeHtml(payload.name)}`,
-    `<b>전화</b>: ${escapeHtml(payload.phone)}`,
-    `<b>날짜</b>: ${escapeHtml(dateFmt)}`,
-    `<b>시간</b>: ${escapeHtml(payload.seating)}`,
-    `<b>인원</b>: ${escapeHtml(payload.party)}명`,
-    `<b>비고</b>: ${escapeHtml(payload.notes || "없음")}`,
-    "━━━━━━━━━━━━━━━━━━━━━",
-    `제출: ${formatManilaNow()}`,
-    "via daimasu.com.ph",
-  ].join("\n");
-}
-
-async function sendToTelegram(text: string): Promise<boolean> {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.error("Telegram credentials missing");
-    return false;
-  }
-  try {
-    const res = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text,
-          parse_mode: "HTML",
-          disable_web_page_preview: true,
-        }),
-      }
-    );
-    const data = await res.json();
-    return !!data.ok;
-  } catch (err) {
-    console.error("Telegram send failed:", err);
-    return false;
-  }
+interface ApiErr {
+  ok: false;
+  error:
+    | { code: "validation"; details?: unknown }
+    | { code: "closed_date" }
+    | { code: "capacity_exceeded" }
+    | { code: "reservations_closed" }
+    | { code: "internal"; reason?: string };
 }
 
 export default function ReservationForm() {
   const { t, lang } = useLang();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [seating, setSeating] = useState<string>(SEATINGS[0].value);
+  const [seating, setSeating] = useState<"s1" | "s2">("s1");
   const [party, setParty] = useState("2");
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [website, setWebsite] = useState(""); // honeypot
 
   const minDate = useMemo(() => {
     const d = new Date();
@@ -135,38 +88,60 @@ export default function ReservationForm() {
     return d;
   }, []);
 
-  const reset = () => {
-    setName("");
-    setPhone("");
-    setSelectedDate(undefined);
-    setSeating(SEATINGS[0].value);
-    setParty("2");
-    setNotes("");
-  };
-
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (status === "sending") return;
+    if (status === "sending" || status === "redirecting") return;
     if (!selectedDate) {
       setAttemptedSubmit(true);
-      // Scroll the calendar into view so the user can see what's missing.
       document
         .querySelector(".rdp-daimasu")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setStatus("sending");
-    const msg = buildTelegramMessage({ name, phone, date: selectedDate, seating, party, notes });
-    const ok = await sendToTelegram(msg);
-    if (ok) {
-      setStatus("success");
-      reset();
-      setAttemptedSubmit(false);
-      setTimeout(() => setStatus("idle"), 8000);
-    } else {
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          service_date: toIsoDate(selectedDate),
+          seating,
+          party_size: Number(party),
+          guest_name: name.trim(),
+          guest_email: email.trim(),
+          guest_phone: phone.trim(),
+          guest_lang: lang,
+          notes: notes.trim() || null,
+          website,
+        }),
+      });
+      const data = (await res.json()) as ApiOk | ApiErr;
+      if (!data.ok) {
+        setStatus("error");
+        setErrorMsg(humanizeErrorCode(data.error.code, lang));
+        return;
+      }
+      setStatus("redirecting");
+      // Persist cancel_token in localStorage as backup if email is delayed
+      try {
+        localStorage.setItem(
+          `daimasu:cancel:${data.reservation_id}`,
+          data.cancel_token
+        );
+      } catch {
+        /* private mode etc. — ignore */
+      }
+      window.location.href = data.checkout_url;
+    } catch {
       setStatus("error");
+      setErrorMsg(
+        lang === "ja"
+          ? "ネットワークエラー。もう一度お試しください。"
+          : "Network error. Please try again."
+      );
     }
   };
 
@@ -174,6 +149,7 @@ export default function ReservationForm() {
   const inputClass =
     "w-full border border-border bg-background/50 px-4 py-3 text-base text-foreground placeholder:text-text-muted/70 focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors";
   const dateMissing = !selectedDate;
+  const submitDisabled = status === "sending" || status === "redirecting";
 
   return (
     <div className="flex flex-col gap-7 border border-border bg-surface/50 p-6 sm:p-8">
@@ -189,14 +165,28 @@ export default function ReservationForm() {
         </h3>
         <p className="text-sm leading-relaxed text-text-secondary">
           {t(
-            "ご希望の日・時間・人数をお選びいただき、お名前とご連絡先をご入力ください。スタッフに直接通知され、24時間以内にご返答いたします。",
-            "Pick a date, a seating, and party size — then tell us how to reach you. Our staff is notified instantly and replies within 24 hours."
+            "ご希望の日・時間・人数をお選びください。お席の確保にはデポジット (50%) のお支払いが必要です。確認メールが即時に届きます。",
+            "Pick a date, a seating, and party size. A 50% deposit secures your seat; a confirmation email arrives instantly."
           )}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        {/* Step 1 — Date (primary decision, first). 44px tap targets via globals.css. */}
+        {/* Honeypot — hidden from humans, bots fill it. */}
+        <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", height: 0, width: 0, overflow: "hidden" }}>
+          <label htmlFor="res-website">Website</label>
+          <input
+            id="res-website"
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </div>
+
+        {/* Step 1 — Date */}
         <div className="flex flex-col gap-3">
           <label className={labelClass}>
             {t("1. ご希望日", "1. Preferred date")}
@@ -217,7 +207,6 @@ export default function ReservationForm() {
               required
             />
           </div>
-          {/* Prominent selected-date banner replaces the tiny 11px line. */}
           {selectedDate ? (
             <div className="flex items-center justify-between border border-gold/40 bg-gold/5 px-4 py-3">
               <div className="flex items-center gap-3">
@@ -244,7 +233,7 @@ export default function ReservationForm() {
           )}
         </div>
 
-        {/* Step 2 — Seating (2 options as a segmented toggle, 56px tall). */}
+        {/* Step 2 — Seating */}
         <div className="flex flex-col gap-3">
           <label className={labelClass}>
             {t("2. ご希望時間", "2. Seating")}
@@ -277,7 +266,7 @@ export default function ReservationForm() {
           </div>
         </div>
 
-        {/* Step 3 — Party size (chip row, 1–8 big tap targets). */}
+        {/* Step 3 — Party size */}
         <div className="flex flex-col gap-3">
           <label className={labelClass}>
             {t("3. 人数", "3. Party size")}
@@ -314,7 +303,7 @@ export default function ReservationForm() {
           </p>
         </div>
 
-        {/* Step 4 — Contact (name + phone; less committal, moved after decision). */}
+        {/* Step 4 — Contact */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <label htmlFor="res-name" className={labelClass}>
@@ -334,26 +323,43 @@ export default function ReservationForm() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="res-phone" className={labelClass}>
-              {t("5. 電話番号", "5. Phone")}
+            <label htmlFor="res-email" className={labelClass}>
+              {t("5. メール", "5. Email")}
               <span className="ml-1 text-gold/40">*</span>
             </label>
             <input
-              id="res-phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              id="res-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="tel"
-              inputMode="tel"
+              autoComplete="email"
+              inputMode="email"
               className={inputClass}
-              placeholder="+63 917 XXX XXXX"
-              pattern="[+0-9 ()-]{7,20}"
+              placeholder="you@example.com"
             />
           </div>
         </div>
 
-        {/* Step 5 — Optional notes. */}
+        <div className="flex flex-col gap-2">
+          <label htmlFor="res-phone" className={labelClass}>
+            {t("6. 電話番号", "6. Phone")}
+            <span className="ml-1 text-gold/40">*</span>
+          </label>
+          <input
+            id="res-phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+            autoComplete="tel"
+            inputMode="tel"
+            className={inputClass}
+            placeholder="+63 917 XXX XXXX"
+            pattern="[+0-9 ()-]{7,30}"
+          />
+        </div>
+
         <div className="flex flex-col gap-2">
           <label htmlFor="res-notes" className={labelClass}>
             {t("備考 (任意)", "Notes (optional)")}
@@ -373,32 +379,41 @@ export default function ReservationForm() {
         </div>
 
         <div className="flex flex-col gap-3 pt-2">
+          {/* Deposit notice */}
+          <div className="flex items-start gap-3 border border-gold/30 bg-gold/[0.04] p-4">
+            <ShieldCheck size={18} className="mt-0.5 flex-shrink-0 text-gold" aria-hidden="true" />
+            <p className="text-[12px] leading-relaxed text-text-secondary">
+              {t(
+                "次の画面で 50% デポジットのお支払い (Stripe) に進みます。残金は当日現地でお支払いください。48時間前まで100%、24時間前まで50%返金いたします。",
+                "Next: pay a 50% deposit via Stripe. The balance is settled on-site. 100% refund up to 48h before; 50% up to 24h."
+              )}
+            </p>
+          </div>
+
           <button
             type="submit"
-            disabled={status === "sending" || status === "success"}
+            disabled={submitDisabled}
             aria-disabled={dateMissing}
             className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-8 py-4 font-[family-name:var(--font-noto-serif)] text-base font-medium tracking-[0.14em] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {status === "sending" ? (
               <>
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                {t("送信中...", "Sending...")}
+                {t("確認中...", "Checking availability...")}
               </>
-            ) : status === "success" ? (
+            ) : status === "redirecting" ? (
               <>
-                <CheckCircle2 size={16} aria-hidden="true" />
-                {t("送信完了", "Sent successfully")}
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                {t("Stripe へ移動中...", "Redirecting to Stripe...")}
               </>
             ) : (
               <>
                 <Send size={16} aria-hidden="true" />
-                {t("予約を送信", "Send Reservation")}
+                {t("お席を確保 → デポジットへ", "Hold seat → Pay deposit")}
               </>
             )}
           </button>
 
-          {/* Helper when date missing — appears after first submit attempt to
-              avoid pre-scolding, then stays until a date is picked. */}
           {attemptedSubmit && dateMissing && (
             <p
               role="alert"
@@ -412,28 +427,7 @@ export default function ReservationForm() {
             </p>
           )}
 
-          {status === "success" && (
-            <div
-              role="status"
-              aria-live="polite"
-              className="flex items-start gap-3 border border-gold/60 bg-gold/10 p-4 text-sm text-gold"
-            >
-              <CheckCircle2 size={18} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-              <div>
-                <p className="mb-1 font-medium">
-                  {t("予約リクエストを受け付けました", "Reservation request received")}
-                </p>
-                <p className="text-xs leading-relaxed text-gold/80">
-                  {t(
-                    "スタッフに通知されました。24時間以内にご記入のお電話またはWhatsAppでご連絡いたします。",
-                    "Our staff has been notified. You will be contacted within 24 hours via phone or WhatsApp."
-                  )}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {status === "error" && (
+          {status === "error" && errorMsg && (
             <div
               role="alert"
               className="flex items-start gap-3 border border-red-500/60 bg-red-500/10 p-4 text-sm text-red-400"
@@ -443,12 +437,7 @@ export default function ReservationForm() {
                 <p className="mb-1 font-medium">
                   {t("送信に失敗しました", "Submission failed")}
                 </p>
-                <p className="text-xs leading-relaxed">
-                  {t(
-                    "ネットワーク状況をご確認の上、もう一度お試しいただくか、下記WhatsAppまたはお電話で直接ご連絡ください。",
-                    "Please check your connection and try again, or contact us directly via WhatsApp or phone below."
-                  )}
-                </p>
+                <p className="text-xs leading-relaxed">{errorMsg}</p>
               </div>
             </div>
           )}
@@ -486,10 +475,29 @@ export default function ReservationForm() {
 
       <p className="text-[11px] leading-relaxed tracking-wide text-text-muted">
         {t(
-          `※ コース料金 ${COURSE_PRICE.amount}(お一人様・税サ別)・お支払いは現地払い(現金 / カード / GCash)。キャンセルは24時間前までご連絡ください。`,
-          `Course ${COURSE_PRICE.amount} per guest (tax & service not included). Payment on-site (cash / card / GCash). Please cancel at least 24 hours in advance.`
+          `※ コース料金 ${COURSE_PRICE.amount}(お一人様・税サ別)・デポジット50%は Stripe・残金は現地払い(現金 / カード / GCash)。キャンセルは48時間前まで100%返金、24時間前まで50%返金。`,
+          `Course ${COURSE_PRICE.amount} per guest (tax & service not included). 50% deposit via Stripe; balance on-site (cash / card / GCash). 100% refund up to 48h, 50% up to 24h.`
         )}
       </p>
     </div>
   );
+}
+
+function humanizeErrorCode(code: string, lang: "ja" | "en"): string {
+  const ja: Record<string, string> = {
+    closed_date: "ご指定の日は休業日です。別の日付をお選びください。",
+    capacity_exceeded: "ご指定の時間帯は満席です。別のお時間または日付をお選びください。",
+    reservations_closed: "現在予約を停止しております。直接お問い合わせください。",
+    validation: "入力内容をご確認ください。",
+    internal: "システムエラーが発生しました。しばらくしてからお試しください。",
+  };
+  const en: Record<string, string> = {
+    closed_date: "Selected date is closed. Please choose another date.",
+    capacity_exceeded: "That seating is full. Please choose another time or date.",
+    reservations_closed: "Reservations are paused. Please contact us directly.",
+    validation: "Please check your inputs.",
+    internal: "System error. Please try again later.",
+  };
+  const m = lang === "ja" ? ja : en;
+  return m[code] ?? m.internal;
 }

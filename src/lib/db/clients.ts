@@ -1,46 +1,32 @@
 /**
  * Supabase clients — three flavors used across the app.
  *
- * 1. service-role (server only)  — bypasses RLS. ONLY for trusted code paths
- *    (booking flow, Stripe webhook, admin mutations). NEVER imported into
- *    "use client" components.
+ * 1. service-role (server only)  — bypasses RLS. ONLY for trusted code paths.
+ * 2. server-bound user client    — cookie-bound, honors RLS for /admin.
+ * 3. browser client              — anon key, public reads only.
  *
- * 2. server-bound user client    — authenticated as the signed-in admin user
- *    via cookies. Honors RLS. Used in /admin route handlers.
+ * The Database generic is OFF for now: supabase-js v2.105 has a complex
+ * conditional type that doesn't accept hand-rolled Database shapes for all
+ * operations. Once `pnpm supabase gen types typescript --linked` runs, the
+ * generated types pass the constraint cleanly and we can re-enable.
  *
- * 3. browser client              — anon key only. Used by the public booking
- *    UI for non-mutating reads (e.g. closed-dates calendar) where RLS
- *    suffices. Never trusted for capacity logic.
- *
- * The service-role key MUST NOT be exposed to the browser. The schema check
- * in `env.ts` plus `import "server-only"` below enforce this at build time.
+ * Trade-off: no autocomplete on `.from('reservations')`. We compensate by
+ * casting `.select<T>()` and `.single<T>()` callers to our domain types
+ * (see src/lib/db/types.ts). Inserts go through zod-validated input objects.
  */
 import "server-only";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import {
+  createClient as createSupabaseClient,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { serverEnv } from "@/lib/env";
-import type { Reservation, Payment, RestaurantSettings } from "@/lib/db/types";
-
-// Hand-rolled minimal Database type — replace with generated types post-link.
-export type Database = {
-  public: {
-    Tables: {
-      reservations: { Row: Reservation; Insert: Partial<Reservation>; Update: Partial<Reservation> };
-      payments:     { Row: Payment;     Insert: Partial<Payment>;     Update: never };
-      restaurant_settings: {
-        Row: RestaurantSettings;
-        Insert: Partial<RestaurantSettings>;
-        Update: Partial<RestaurantSettings>;
-      };
-    };
-  };
-};
 
 /** Service-role client. Use sparingly; bypasses RLS. */
-export function adminClient() {
+export function adminClient(): SupabaseClient {
   const env = serverEnv();
-  return createSupabaseClient<Database>(
+  return createSupabaseClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.SUPABASE_SERVICE_ROLE_KEY,
     {
@@ -50,10 +36,10 @@ export function adminClient() {
 }
 
 /** Cookie-bound server client — used in /admin route handlers and server components. */
-export async function authedServerClient() {
+export async function authedServerClient(): Promise<SupabaseClient> {
   const env = serverEnv();
   const cookieStore = await cookies();
-  return createServerClient<Database>(
+  return createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
