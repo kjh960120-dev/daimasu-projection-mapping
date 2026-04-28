@@ -71,11 +71,11 @@ export default function Header() {
             <img
               src="/logo.png"
               alt="DAIMASU Japanese Bar"
-              width={408}
+              width={232}
               height={200}
               loading="eager"
               decoding="sync"
-              className="h-10 w-auto sm:h-12"
+              className="h-12 w-auto sm:h-14"
             />
           </a>
 
