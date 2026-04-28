@@ -49,6 +49,7 @@ export function ManualBookingForm({
   const [depositReceived, setDepositReceived] = useState(false);
   const [seatMode, setSeatMode] = useState<"auto" | "manual">("auto");
   const [pickedSeats, setPickedSeats] = useState<number[]>([]);
+  const [step, setStep] = useState<"edit" | "review">("edit");
   const [status, setStatus] = useState<"idle" | "pending" | "ok" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -133,18 +134,34 @@ export function ManualBookingForm({
   // flashing errors at the user before they touch anything).
   const [showValidation, setShowValidation] = useState(false);
 
-  async function submit(e: React.FormEvent) {
+  // Step 1: from edit → review. Runs validation; if it passes, go to
+  // the confirmation screen instead of hitting the API right away.
+  function goToReview(e: React.FormEvent) {
     e.preventDefault();
     setShowValidation(true);
-
-    // Block at the client when required text fields are empty so
-    // operator gets immediate feedback (zod also rejects server-side).
-    if (nameMissing || phoneMissing || partySizeMissing) {
+    if (
+      nameMissing ||
+      phoneMissing ||
+      partySizeMissing ||
+      dateClosed ||
+      partySize > seatRemaining ||
+      (seatMode === "manual" && !manualPickValid)
+    ) {
       setStatus("error");
       setErrorMsg("validation");
       return;
     }
+    setStatus("idle");
+    setErrorMsg(null);
+    setStep("review");
+    // Scroll to top so the operator immediately sees the review header.
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
+  // Step 2: actually POST to the API. Only reachable from the review
+  // screen, so validation has already passed.
+  async function submit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     setStatus("pending");
     setErrorMsg(null);
     try {
@@ -188,8 +205,42 @@ export function ManualBookingForm({
     }
   }
 
+  // Render review screen when step === "review"
+  if (step === "review") {
+    return (
+      <ReviewPanel
+        lang={lang}
+        date={date}
+        seating={seating}
+        partySize={partySize}
+        guestName={trimmedName}
+        guestEmail={email.trim()}
+        guestPhone={trimmedPhone}
+        guestLang={guestLang}
+        notes={notes.trim()}
+        source={source}
+        depositReceived={depositReceived}
+        seatMode={seatMode}
+        pickedSeats={pickedSeats}
+        autoSuggestion={autoSuggestion}
+        coursePriceCentavos={settings.course_price_centavos}
+        depositPct={settings.deposit_pct}
+        seating1Label={settings.seating_1_label}
+        seating2Label={settings.seating_2_label}
+        status={status}
+        errorMsg={errorMsg}
+        onConfirm={() => submit()}
+        onEdit={() => {
+          setStep("edit");
+          setStatus("idle");
+          setErrorMsg(null);
+        }}
+      />
+    );
+  }
+
   return (
-    <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[300px_1fr]">
+    <form onSubmit={goToReview} className="grid gap-6 lg:grid-cols-[300px_1fr]">
       {/* LEFT — date & seat picker */}
       <div className="border border-border bg-surface p-4">
         <p className="mb-3 admin-section-label">
@@ -507,15 +558,15 @@ export function ManualBookingForm({
 
         <div className="border border-border bg-background/40 p-4">
           <div className="grid gap-1 text-[12px]">
-            <Row
+            <PriceRow
               label={ti("コース料金", "Course price")}
               value={`${formatPHP(settings.course_price_centavos, lang)} × ${partySize}`}
             />
-            <Row
+            <PriceRow
               label={ti("合計", "Total")}
               value={formatPHP(courseTotal, lang)}
             />
-            <Row
+            <PriceRow
               label={ti(`デポジット (${settings.deposit_pct}%)`, `Deposit (${settings.deposit_pct}%)`)}
               value={formatPHP(deposit, lang)}
             />
@@ -580,19 +631,7 @@ export function ManualBookingForm({
           }
           className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium tracking-[0.14em] disabled:opacity-50"
         >
-          {status === "pending" ? (
-            <>
-              <Loader2 className="animate-spin" size={14} aria-hidden="true" />
-              {ti("登録中...", "Saving...")}
-            </>
-          ) : status === "ok" ? (
-            <>
-              <CheckCircle2 size={14} aria-hidden="true" />
-              {ti("登録完了", "Saved")}
-            </>
-          ) : (
-            ti("予約を登録する", "Save booking")
-          )}
+          {ti("入力内容を確認する →", "Review entry →")}
         </button>
 
         {status === "error" && errorMsg === "validation" && (
@@ -807,7 +846,7 @@ function Field({
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function PriceRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between border-b border-border/30 py-1 last:border-b-0">
       <span className="text-text-muted">{label}</span>
@@ -941,5 +980,266 @@ function SlotBadge({
         </span>
       )}
     </span>
+  );
+}
+
+function ReviewPanel({
+  lang,
+  date,
+  seating,
+  partySize,
+  guestName,
+  guestEmail,
+  guestPhone,
+  guestLang,
+  notes,
+  source,
+  depositReceived,
+  seatMode,
+  pickedSeats,
+  autoSuggestion,
+  coursePriceCentavos,
+  depositPct,
+  seating1Label,
+  seating2Label,
+  status,
+  errorMsg,
+  onConfirm,
+  onEdit,
+}: {
+  lang: AdminLang;
+  date: string;
+  seating: SeatingSlot;
+  partySize: number;
+  guestName: string;
+  guestEmail: string;
+  guestPhone: string;
+  guestLang: "ja" | "en";
+  notes: string;
+  source: "phone" | "walkin" | "staff";
+  depositReceived: boolean;
+  seatMode: "auto" | "manual";
+  pickedSeats: number[];
+  autoSuggestion: number[] | null;
+  coursePriceCentavos: number;
+  depositPct: number;
+  seating1Label: string;
+  seating2Label: string;
+  status: "idle" | "pending" | "ok" | "error";
+  errorMsg: string | null;
+  onConfirm: () => void;
+  onEdit: () => void;
+}) {
+  const ti = (ja: string, en: string) => (lang === "ja" ? ja : en);
+  const courseTotal = coursePriceCentavos * partySize;
+  const deposit = Math.floor((courseTotal * depositPct) / 100);
+  const balance = courseTotal - deposit;
+  const dateObj = new Date(`${date}T00:00:00+08:00`);
+  const dateLabel = dateObj.toLocaleDateString(
+    lang === "ja" ? "ja-JP" : "en-PH",
+    {
+      timeZone: "Asia/Manila",
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }
+  );
+  const seatLabel =
+    seating === "s1"
+      ? `${seating1Label} (${ti("1部", "Seating 1")})`
+      : `${seating2Label} (${ti("2部", "Seating 2")})`;
+  const sourceLabel =
+    source === "phone"
+      ? ti("電話", "Phone")
+      : source === "walkin"
+        ? ti("来店", "Walk-in")
+        : ti("スタッフ手動", "Staff manual");
+  const seatsToShow =
+    seatMode === "manual" ? pickedSeats : (autoSuggestion ?? []);
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <header className="mb-6 border-b border-border pb-5">
+        <p className="admin-section-label">
+          {ti("入力内容の確認", "Review your entry")}
+        </p>
+        <h2 className="mt-2 font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.02em] text-foreground">
+          {ti("この情報でお間違いないですか?", "Is this information correct?")}
+        </h2>
+        <p className="mt-2 admin-body text-text-secondary">
+          {ti(
+            "「これで予約する」を押すと予約が確定します。修正がある場合は下のボタンから入力画面に戻ってください。",
+            "Press “Confirm booking” to finalize. Use the edit button below to return to the form."
+          )}
+        </p>
+      </header>
+
+      {/* Booking details */}
+      <section className="mb-6 border border-border bg-surface">
+        <Row label={ti("日付", "Date")} value={dateLabel} accent />
+        <Row label={ti("時間帯", "Seating")} value={seatLabel} accent />
+        <Row
+          label={ti("人数", "Party size")}
+          value={`${partySize} ${ti("名", "guests")}`}
+          accent
+        />
+        <Row
+          label={ti("席番号", "Seats")}
+          value={
+            seatsToShow.length > 0
+              ? `${seatsToShow.join(", ")} ${
+                  seatMode === "manual"
+                    ? ti("(手動指定)", "(manual)")
+                    : ti("(自動・右奥から)", "(auto · right-back)")
+                }`
+              : ti("自動 (送信時に確定)", "Auto (assigned on submit)")
+          }
+        />
+      </section>
+
+      {/* Guest */}
+      <section className="mb-6 border border-border bg-surface">
+        <Row label={ti("お客様名", "Guest name")} value={guestName} accent />
+        <Row label={ti("電話番号", "Phone")} value={guestPhone} accent />
+        <Row
+          label={ti("メール", "Email")}
+          value={guestEmail || ti("(未入力)", "(blank)")}
+          dim={!guestEmail}
+        />
+        <Row
+          label={ti("お客様の言語", "Guest language")}
+          value={guestLang === "ja" ? "日本語" : "English"}
+        />
+        <Row label={ti("経路", "Source")} value={sourceLabel} />
+        <Row
+          label={ti("備考", "Notes")}
+          value={notes || ti("(なし)", "(none)")}
+          dim={!notes}
+          multiline
+        />
+      </section>
+
+      {/* Money */}
+      <section className="mb-6 border border-border bg-surface">
+        <p className="border-b border-border px-4 py-3 admin-section-label">
+          {ti("料金内訳", "Pricing breakdown")}
+        </p>
+        <Row
+          label={ti("コース料金", "Course price")}
+          value={`${formatPHP(coursePriceCentavos, lang)} × ${partySize}`}
+        />
+        <Row
+          label={ti("合計", "Total")}
+          value={formatPHP(courseTotal, lang)}
+          accent
+        />
+        <Row
+          label={ti(`デポジット (${depositPct}%)`, `Deposit (${depositPct}%)`)}
+          value={
+            depositReceived
+              ? `${formatPHP(deposit, lang)} ${ti("(現金受領済)", "(cash received)")}`
+              : `${formatPHP(deposit, lang)} ${ti("(未受領)", "(not received)")}`
+          }
+        />
+        <Row
+          label={ti("店舗精算 (残金)", "Balance on-site")}
+          value={formatPHP(balance, lang)}
+        />
+      </section>
+
+      {status === "error" && errorMsg && errorMsg !== "validation" && (
+        <div className="mb-4 border border-red-500/60 bg-red-500/[0.10] px-4 py-3 text-[13px] text-red-400">
+          {errorMsg === "capacity_exceeded"
+            ? ti(
+                "席が足りません。修正してから再送してください。",
+                "Capacity exceeded. Please edit and retry."
+              )
+            : errorMsg === "closed_date"
+              ? ti("選択した日は休業日です。", "Selected date is closed.")
+              : errorMsg === "seat_conflict"
+                ? ti(
+                    "選択した席は他の予約と重複しています。",
+                    "Selected seats conflict with another booking."
+                  )
+                : ti(`登録に失敗しました: ${errorMsg}`, `Failed: ${errorMsg}`)}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={status === "pending"}
+          className="inline-flex items-center justify-center border border-border bg-surface px-6 py-3.5 text-sm font-medium text-foreground hover:border-gold/50 disabled:opacity-50"
+        >
+          {ti("← 予約情報を修正する", "← Edit booking")}
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={status === "pending"}
+          className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold tracking-[0.10em] disabled:opacity-60"
+        >
+          {status === "pending" ? (
+            <>
+              <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+              {ti("予約中...", "Confirming...")}
+            </>
+          ) : status === "ok" ? (
+            <>
+              <CheckCircle2 size={16} aria-hidden="true" />
+              {ti("予約完了", "Confirmed")}
+            </>
+          ) : (
+            ti("✓ 間違いないからこれで予約する", "✓ Confirm booking")
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  accent,
+  dim,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  dim?: boolean;
+  multiline?: boolean;
+}) {
+  return (
+    <div
+      className={
+        multiline
+          ? "grid grid-cols-[140px_1fr] gap-4 border-b border-border/50 px-4 py-3 last:border-b-0 sm:grid-cols-[180px_1fr]"
+          : "flex items-baseline justify-between gap-4 border-b border-border/50 px-4 py-3 last:border-b-0"
+      }
+    >
+      <span className="text-[12px] font-medium uppercase tracking-[0.10em] text-text-secondary">
+        {label}
+      </span>
+      <span
+        className={
+          dim
+            ? "admin-body text-text-muted"
+            : accent
+              ? "text-base font-semibold text-foreground"
+              : "admin-body text-foreground"
+        }
+      >
+        {multiline ? (
+          <span className="whitespace-pre-line break-words">{value}</span>
+        ) : (
+          value
+        )}
+      </span>
+    </div>
   );
 }
