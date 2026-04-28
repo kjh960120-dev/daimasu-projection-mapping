@@ -85,6 +85,71 @@ export interface Reservation {
   stripe_checkout_session_id: string | null;
   /** 1-indexed counter seats assigned to this booking (rightmost = back of bar). */
   seat_numbers: number[] | null;
+  /** Structured celebration / surprise metadata. NULL = ordinary booking. */
+  celebration: CelebrationData | null;
+}
+
+export type CelebrationOccasion =
+  | "none"
+  | "birthday"
+  | "anniversary"
+  | "proposal"
+  | "milestone_age"
+  | "business"
+  | "farewell"
+  | "other";
+
+export type CelebrantRelation =
+  | "self"
+  | "spouse"
+  | "partner"
+  | "parent"
+  | "child"
+  | "friend"
+  | "colleague"
+  | "other";
+
+export type CelebrantGender = "m" | "f" | "x";
+
+export type SurpriseTimingMoment =
+  | "arrival"
+  | "mid_course"
+  | "dessert"
+  | "farewell"
+  | "custom";
+
+export type ArrivesFirst = "booker" | "celebrant" | "together";
+
+export interface CelebrationDeliverables {
+  cake?: { size?: string; message?: string; dietary?: string };
+  message_plate?: { message: string };
+  flowers?: { budget_pesos?: number; color?: string };
+  champagne?: { label?: string };
+  projection?: { content: string };
+  photo_service?: { delivery_method?: string };
+  bgm?: string;
+}
+
+export interface CelebrationData {
+  occasion: CelebrationOccasion;
+  occasion_other?: string;
+  is_surprise: boolean;
+  celebrant: {
+    name: string;
+    relation?: CelebrantRelation;
+    gender?: CelebrantGender;
+    age_label?: string;
+  };
+  surprise?: {
+    timing: SurpriseTimingMoment;
+    timing_custom?: string;
+    arrives_first: ArrivesFirst;
+    bringing_items?: string;
+    coordination_phone?: string;
+  };
+  deliverables: CelebrationDeliverables;
+  sns_ok: boolean;
+  notes_celebration?: string;
 }
 
 export interface Payment {

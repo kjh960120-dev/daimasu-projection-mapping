@@ -8,6 +8,9 @@ import { autoAllocateSeats, formatPHP } from "@/lib/domain/reservation";
 import type { AdminLang } from "@/lib/auth/admin-lang";
 import { NumPadInput } from "../../_components/num-pad-input";
 import { TextFieldButton } from "../../_components/text-field-button";
+import { CelebrationPanel, EMPTY_CELEBRATION } from "../../_components/celebration-panel";
+import { CelebrationReview } from "../../_components/celebration-display";
+import type { CelebrationData } from "@/lib/db/types";
 
 interface DayCell {
   date: string;
@@ -43,6 +46,7 @@ export function ManualBookingForm({
   // offsetDays = which 14-day window to show in the calendar pane.
   // 0 = today..today+13, 7 = next week, 14 = +2 weeks, 30 = next month.
   const [offsetDays, setOffsetDays] = useState(0);
+  const [celebration, setCelebration] = useState<CelebrationData>(EMPTY_CELEBRATION);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+63 ");
   const [email, setEmail] = useState("");
@@ -186,6 +190,8 @@ export function ManualBookingForm({
             seatMode === "manual" && pickedSeats.length === partySize
               ? pickedSeats
               : null,
+          celebration:
+            celebration.occasion === "none" ? null : celebration,
         }),
       });
       const data = (await res.json()) as {
@@ -230,6 +236,7 @@ export function ManualBookingForm({
         depositPct={settings.deposit_pct}
         seating1Label={settings.seating_1_label}
         seating2Label={settings.seating_2_label}
+        celebration={celebration.occasion === "none" ? null : celebration}
         status={status}
         errorMsg={errorMsg}
         onConfirm={() => submit()}
@@ -613,6 +620,12 @@ export function ManualBookingForm({
             )}
           />
         </Field>
+
+        <CelebrationPanel
+          value={celebration}
+          onChange={setCelebration}
+          lang={lang}
+        />
 
         <div className="border border-border bg-background/40 p-4">
           <div className="grid gap-1 text-[12px]">
@@ -1060,6 +1073,7 @@ function ReviewPanel({
   depositPct,
   seating1Label,
   seating2Label,
+  celebration,
   status,
   errorMsg,
   onConfirm,
@@ -1083,6 +1097,7 @@ function ReviewPanel({
   depositPct: number;
   seating1Label: string;
   seating2Label: string;
+  celebration: CelebrationData | null;
   status: "idle" | "pending" | "ok" | "error";
   errorMsg: string | null;
   onConfirm: () => void;
@@ -1177,6 +1192,8 @@ function ReviewPanel({
           multiline
         />
       </section>
+
+      {celebration && <CelebrationReview celebration={celebration} lang={lang} />}
 
       {/* Money */}
       <section className="mb-6 border border-border bg-surface">

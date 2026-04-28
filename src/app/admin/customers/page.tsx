@@ -31,6 +31,7 @@ interface CustomerRow {
   visit_count: number;
   no_show_count: number;
   cancel_count: number;
+  celebration_count: number;
   total_net_centavos: number;
   last_visit_date: string | null;
   next_booking_date: string | null;
@@ -74,6 +75,8 @@ export default async function CustomersPage({
     const isFuture = r.service_date >= today &&
       (r.status === "confirmed" || r.status === "pending_payment");
 
+    const hasCelebration =
+      !!r.celebration && r.celebration.occasion !== "none";
     if (!cur) {
       grouped.set(key, {
         guest_phone: r.guest_phone,
@@ -88,6 +91,7 @@ export default async function CustomersPage({
           r.status === "cancelled_late"
             ? 1
             : 0,
+        celebration_count: hasCelebration ? 1 : 0,
         total_net_centavos: isCompleted ? r.settlement_centavos ?? 0 : 0,
         last_visit_date: isCompleted ? r.service_date : null,
         next_booking_date: isFuture ? r.service_date : null,
@@ -109,6 +113,7 @@ export default async function CustomersPage({
       ) {
         cur.cancel_count++;
       }
+      if (hasCelebration) cur.celebration_count++;
       if (
         isFuture &&
         (!cur.next_booking_date || r.service_date < cur.next_booking_date)
@@ -238,6 +243,18 @@ export default async function CustomersPage({
                         {c.next_booking_date && (
                           <span className="border border-blue-500/40 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-blue-400">
                             {ti(lang, "来店予定", "Upcoming")}
+                          </span>
+                        )}
+                        {c.celebration_count > 0 && (
+                          <span
+                            className="border border-gold/60 bg-gold/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-gold"
+                            title={ti(
+                              lang,
+                              `過去 ${c.celebration_count} 回お祝い記録あり`,
+                              `${c.celebration_count} celebrations on file`
+                            )}
+                          >
+                            🎉 {c.celebration_count}
                           </span>
                         )}
                       </div>

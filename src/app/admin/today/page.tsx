@@ -17,6 +17,8 @@ import type { Reservation, RestaurantSettings } from "@/lib/db/types";
 import { mockSettings, mockReservations } from "../preview-mode";
 import { PrintButton } from "./print-button";
 import { CounterSeatMap } from "../_components/counter-seat-map";
+import { celebrationSummaryLine } from "../_components/celebration-display";
+import { Sparkles } from "lucide-react";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -204,6 +206,56 @@ export default async function TodayServiceSheetPage({
           </div>
         </div>
 
+        {bookings.some((b) => b.celebration) && (
+          <section className="mb-6 border-2 border-gold/60 bg-gold/[0.06] print:border-black">
+            <header className="flex items-center gap-2 border-b border-gold/40 px-4 py-2.5 print:border-black/40">
+              <Sparkles size={14} className="text-gold print:text-black" aria-hidden="true" />
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-gold print:text-black">
+                {ti(lang, "本日のサプライズ・お祝い", "Today's celebrations")}
+              </p>
+              <span className="font-mono text-[12px] text-text-secondary print:text-black/60">
+                {bookings.filter((b) => b.celebration).length}件
+              </span>
+            </header>
+            <ul className="divide-y divide-gold/20 print:divide-black/30">
+              {bookings
+                .filter((b) => b.celebration)
+                .map((b) => {
+                  const c = b.celebration!;
+                  const time = new Date(b.service_starts_at).toLocaleTimeString(
+                    lang === "ja" ? "ja-JP" : "en-PH",
+                    { timeZone: "Asia/Manila", hour: "2-digit", minute: "2-digit" }
+                  );
+                  return (
+                    <li
+                      key={b.id}
+                      className="grid grid-cols-[60px_1fr_auto] items-baseline gap-3 px-4 py-2.5 text-[13px]"
+                    >
+                      <span className="font-mono admin-num font-medium text-foreground print:text-black">
+                        {time}
+                      </span>
+                      <span className="leading-snug text-foreground print:text-black">
+                        <span className="font-semibold">{b.guest_name}</span>
+                        <span className="ml-2 admin-meta">
+                          {b.party_size}名
+                          {b.seat_numbers && ` · 席 ${b.seat_numbers.join(",")}`}
+                        </span>
+                        <div className="mt-0.5 admin-body normal-case tracking-normal">
+                          {celebrationSummaryLine(c, lang)}
+                        </div>
+                      </span>
+                      {c.is_surprise && (
+                        <span className="border border-amber-500/60 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.10em] text-amber-400 print:border-black print:bg-transparent print:text-black">
+                          {ti(lang, "サプライズ", "SURPRISE")}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+            </ul>
+          </section>
+        )}
+
         <SeatingBlock
           title={`${settings.seating_1_label} · ${ti(lang, "1部", "Seating 1")}`}
           bookings={s1}
@@ -339,14 +391,19 @@ function SeatingBlock({
                     {b.guest_lang}
                   </td>
                   <td className="px-2 py-3 text-[13px] leading-snug">
+                    {b.celebration && (
+                      <div className="mb-1 inline-block border border-gold/60 bg-gold/10 px-1.5 py-0.5 text-[11px] font-semibold text-gold print:border-black print:bg-transparent print:text-black">
+                        🎉 {celebrationSummaryLine(b.celebration, lang)}
+                      </div>
+                    )}
                     {b.notes ? (
                       <span className="flex items-start gap-1.5">
                         <span className="text-gold/80 print:text-black">●</span>
                         <span className="whitespace-pre-line">{b.notes}</span>
                       </span>
-                    ) : (
+                    ) : !b.celebration ? (
                       <span className="text-text-muted print:text-black/40">—</span>
-                    )}
+                    ) : null}
                   </td>
                   <td className="px-2 py-3 text-center">
                     <span className="inline-block h-4 w-4 border border-border/60 print:border-black/40" />

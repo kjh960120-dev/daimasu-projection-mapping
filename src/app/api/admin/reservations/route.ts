@@ -142,6 +142,10 @@ export async function POST(req: NextRequest) {
     cancel_token_expires_at: tokenBundle.expiresAt.toISOString(),
     source: input.source,
     seat_numbers: seatNumbers,
+    celebration:
+      input.celebration && input.celebration.occasion !== "none"
+        ? input.celebration
+        : null,
   };
 
   const { error: insertErr } = await sb.from("reservations").insert(insertRow);

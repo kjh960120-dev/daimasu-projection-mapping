@@ -25,6 +25,7 @@ import { mockReservations, mockPayments } from "../../preview-mode";
 import { SettleForm } from "./settle-form";
 import { NoShowButton } from "./no-show-button";
 import { CancelWithRefundForm } from "./cancel-form";
+import { CelebrationReview } from "../../_components/celebration-display";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -379,6 +380,15 @@ export default async function ReservationDetailPage({
           )}
         </div>
       </section>
+
+      {reservation.celebration && (
+        <div className="mt-8">
+          <CelebrationReview
+            celebration={reservation.celebration}
+            lang={lang}
+          />
+        </div>
+      )}
 
       {/* Payments */}
       <section className="mt-8 border border-border bg-surface">

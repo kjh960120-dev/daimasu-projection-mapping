@@ -9,6 +9,7 @@ import {
   CalendarX,
   Users,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { getAdmin } from "@/lib/auth/admin";
 import { getAdminLang, ti } from "@/lib/auth/admin-lang";
@@ -65,6 +66,9 @@ export default async function AdminLayout({
             <MobileNavLink href="/admin/reservations/new" icon={<Plus size={14} />}>
               {ti(lang, "新規", "New")}
             </MobileNavLink>
+            <MobileNavLink href="/admin/celebrations" icon={<Sparkles size={14} />}>
+              {ti(lang, "お祝い", "Celebrate")}
+            </MobileNavLink>
             <MobileNavLink href="/admin/customers" icon={<Users size={14} />}>
               {ti(lang, "顧客", "Customers")}
             </MobileNavLink>
@@ -104,6 +108,9 @@ export default async function AdminLayout({
                 icon={<Plus size={16} />}
               >
                 {ti(lang, "新規予約 (電話/来店)", "New booking")}
+              </NavLink>
+              <NavLink href="/admin/celebrations" icon={<Sparkles size={16} />}>
+                {ti(lang, "お祝い管理", "Celebrations")}
               </NavLink>
               <NavLink href="/admin/customers" icon={<Users size={16} />}>
                 {ti(lang, "顧客一覧", "Customers")}

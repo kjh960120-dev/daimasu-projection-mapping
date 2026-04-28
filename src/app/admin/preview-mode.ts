@@ -89,6 +89,30 @@ export const mockReservations: Reservation[] = [
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_1",
     seat_numbers: [5, 6, 7, 8],
+    celebration: {
+      occasion: "birthday",
+      is_surprise: true,
+      celebrant: {
+        name: "山田 花子",
+        relation: "spouse",
+        gender: "f",
+        age_label: "30代",
+      },
+      surprise: {
+        timing: "dessert",
+        arrives_first: "booker",
+        bringing_items: "花束を当日18時までに持ち込み、隠して保管",
+        coordination_phone: "+63 917 999 0000",
+      },
+      deliverables: {
+        cake: { size: "5号", message: "Happy 30th Hanako", dietary: "乳製品アレルギーあり" },
+        message_plate: { message: "Happy Birthday Hanako!" },
+        projection: { content: "デザートタイムに名前が星空に浮かび上がる演出" },
+        photo_service: { delivery_method: "LINE" },
+      },
+      sns_ok: false,
+      notes_celebration: "プロポーズの可能性あり (お客様より口頭で示唆)。慎重に対応",
+    },
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
@@ -121,6 +145,7 @@ export const mockReservations: Reservation[] = [
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_2",
     seat_numbers: [7, 8],
+    celebration: null,
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
@@ -153,6 +178,22 @@ export const mockReservations: Reservation[] = [
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_3",
     seat_numbers: [3, 4, 5, 6, 7, 8],
+    celebration: {
+      occasion: "anniversary",
+      is_surprise: false,
+      celebrant: {
+        name: "田中 夫妻",
+        relation: "spouse",
+        age_label: "結婚10周年",
+      },
+      deliverables: {
+        cake: { size: "6号", message: "10th Anniversary" },
+        flowers: { budget_pesos: 3000, color: "white" },
+        champagne: { label: "Krug Grande Cuvée" },
+        photo_service: { delivery_method: "Email" },
+      },
+      sns_ok: true,
+    },
   },
   {
     id: "44444444-4444-4444-4444-444444444444",
@@ -185,6 +226,7 @@ export const mockReservations: Reservation[] = [
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_4",
     seat_numbers: [6, 7, 8],
+    celebration: null,
   },
   {
     id: "55555555-5555-5555-5555-555555555555",
@@ -217,6 +259,7 @@ export const mockReservations: Reservation[] = [
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_5",
     seat_numbers: [7, 8],
+    celebration: null,
   },
   {
     id: "66666666-6666-6666-6666-666666666666",
@@ -249,6 +292,7 @@ export const mockReservations: Reservation[] = [
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_6",
     seat_numbers: [7, 8],
+    celebration: null,
   },
 ];
 

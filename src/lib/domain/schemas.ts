@@ -69,6 +69,84 @@ export const availabilityQuerySchema = z.object({
 
 export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
 
+/** Celebration / surprise booking metadata. */
+const cleanText = (max: number) =>
+  z.preprocess(
+    (raw) => (raw == null ? undefined : cleanString(raw)),
+    z.string().max(max).optional()
+  );
+const cleanRequired = (max: number) =>
+  z.preprocess(
+    (raw) => (raw == null ? "" : cleanString(raw)),
+    z.string().max(max).default("")
+  );
+
+export const celebrationSchema = z.object({
+  occasion: z.enum([
+    "none",
+    "birthday",
+    "anniversary",
+    "proposal",
+    "milestone_age",
+    "business",
+    "farewell",
+    "other",
+  ]),
+  occasion_other: cleanText(80),
+  is_surprise: z.boolean().default(false),
+  celebrant: z.object({
+    name: cleanRequired(80),
+    relation: z
+      .enum(["self", "spouse", "partner", "parent", "child", "friend", "colleague", "other"])
+      .optional(),
+    gender: z.enum(["m", "f", "x"]).optional(),
+    age_label: cleanText(40),
+  }),
+  surprise: z
+    .object({
+      timing: z.enum(["arrival", "mid_course", "dessert", "farewell", "custom"]),
+      timing_custom: cleanText(120),
+      arrives_first: z.enum(["booker", "celebrant", "together"]),
+      bringing_items: cleanText(280),
+      coordination_phone: cleanText(30),
+    })
+    .optional(),
+  deliverables: z
+    .object({
+      cake: z
+        .object({
+          size: cleanText(20),
+          message: cleanText(140),
+          dietary: cleanText(140),
+        })
+        .optional(),
+      message_plate: z
+        .object({ message: cleanRequired(140) })
+        .optional(),
+      flowers: z
+        .object({
+          budget_pesos: z.number().int().min(0).max(1_000_000).optional(),
+          color: cleanText(40),
+        })
+        .optional(),
+      champagne: z
+        .object({ label: cleanText(80) })
+        .optional(),
+      projection: z
+        .object({ content: cleanRequired(280) })
+        .optional(),
+      photo_service: z
+        .object({ delivery_method: cleanText(40) })
+        .optional(),
+      bgm: cleanText(140),
+    })
+    .default({}),
+  sns_ok: z.boolean().default(false),
+  notes_celebration: cleanText(560),
+});
+
+export type CelebrationInput = z.infer<typeof celebrationSchema>;
+
 /** Owner-side manual booking (phone / walk-in / staff). No deposit, status=confirmed. */
 export const adminCreateReservationSchema = z.object({
   service_date: dateString,
@@ -95,6 +173,9 @@ export const adminCreateReservationSchema = z.object({
     .max(20)
     .optional()
     .nullable(),
+  // Optional structured celebration / surprise data. NULL = ordinary
+  // booking (no occasion).
+  celebration: celebrationSchema.optional().nullable(),
 });
 
 export type AdminCreateReservationInput = z.infer<
