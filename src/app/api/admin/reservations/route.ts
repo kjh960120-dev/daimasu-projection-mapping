@@ -20,12 +20,9 @@ import type { Reservation, RestaurantSettings } from "@/lib/db/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
+const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 
+export async function POST(req: NextRequest) {
   let body: unknown;
   try {
     body = await req.json();
@@ -44,6 +41,25 @@ export async function POST(req: NextRequest) {
     );
   }
   const input = parsed.data;
+
+  // PREVIEW_MODE: synthetic success so the operator can exercise the
+  // booking flow against mock data without a live Supabase connection.
+  // Returns a known mock reservation ID so the detail page renders.
+  if (PREVIEW_MODE) {
+    return NextResponse.json(
+      {
+        ok: true,
+        reservation_id: "11111111-1111-1111-1111-111111111111",
+        preview: true,
+      },
+      { status: 201 }
+    );
+  }
+
+  const admin = await getAdmin();
+  if (!admin) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
 
   const sb = adminClient();
   const { data: settings } = await sb
