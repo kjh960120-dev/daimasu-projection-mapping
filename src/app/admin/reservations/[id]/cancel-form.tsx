@@ -6,6 +6,7 @@ import type { Reservation } from "@/lib/db/types";
 import type { AdminLang } from "@/lib/auth/admin-lang";
 import { formatPHP } from "@/lib/domain/reservation";
 import { NumPadInput } from "../../_components/num-pad-input";
+import { TextFieldButton } from "../../_components/text-field-button";
 
 /**
  * Owner-side cancellation with refund override.
@@ -133,16 +134,25 @@ export function CancelWithRefundForm({
               )}
             </span>
           </div>
-          <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary">
-            {ti("理由 (監査ログに残ります)", "Reason (logged for audit)")}
-            <textarea
+          <div className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary">
+            <span>{ti("理由 (監査ログに残ります)", "Reason (logged for audit)")}</span>
+            <TextFieldButton
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={2}
-              required
-              className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
+              onChange={setReason}
+              label={ti("オーバーライドの理由", "Override reason")}
+              multiline
+              rows={3}
+              maxLength={280}
+              placeholder={ti(
+                "例: 体調不良のため特例で全額返金",
+                "e.g. illness — full refund as goodwill"
+              )}
+              hint={ti(
+                "audit_log にスタッフ名と一緒に記録されます。",
+                "Stored with the staff identity in audit_log."
+              )}
             />
-          </label>
+          </div>
         </>
       )}
 

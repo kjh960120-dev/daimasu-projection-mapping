@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import type { RestaurantSettings } from "@/lib/db/types";
 import { NumPadInput } from "../_components/num-pad-input";
+import { TextFieldButton } from "../_components/text-field-button";
 
 type Lang = "ja" | "en";
 const ti = (lang: Lang, ja: string, en: string) => (lang === "ja" ? ja : en);
@@ -180,6 +181,9 @@ export function SettingsForm({
           label={ti(lang, "Telegram Bot トークン", "Telegram bot token")}
           value={s.telegram_bot_token ?? ""}
           onChange={(v) => update("telegram_bot_token", v || null)}
+          autoCapitalize="none"
+          autoComplete="off"
+          placeholder="123456:ABC-..."
           help={ti(
             lang,
             "@BotFather から取得。空欄で Telegram 通知を無効化。",
@@ -190,17 +194,29 @@ export function SettingsForm({
           label={ti(lang, "Telegram チャットID", "Telegram chat ID")}
           value={s.telegram_chat_id ?? ""}
           onChange={(v) => update("telegram_chat_id", v || null)}
+          inputMode="numeric"
+          autoCapitalize="none"
+          autoComplete="off"
+          placeholder="-1234567890"
         />
         <TextField
           label={ti(lang, "WhatsApp 送信元番号 (Twilio)", "WhatsApp 'from' number (Twilio)")}
           value={s.whatsapp_from_number ?? ""}
           onChange={(v) => update("whatsapp_from_number", v || null)}
+          autoCapitalize="none"
+          autoComplete="off"
+          placeholder="whatsapp:+14155238886"
           help={ti(lang, "例: whatsapp:+14155238886", "e.g. whatsapp:+14155238886")}
         />
         <TextField
           label={ti(lang, "Resend 送信元メール", "Resend 'from' email")}
           value={s.resend_from_email ?? ""}
           onChange={(v) => update("resend_from_email", v || null)}
+          type="email"
+          inputMode="email"
+          autoCapitalize="none"
+          autoComplete="email"
+          placeholder="reservations@bar.daimasu.com.ph"
         />
       </Section>
 
@@ -209,11 +225,16 @@ export function SettingsForm({
           label={ti(lang, "表示名", "Display name")}
           value={s.display_name}
           onChange={(v) => update("display_name", v)}
+          autoCapitalize="words"
+          placeholder="DAIMASU 大桝 BAR"
         />
         <TextField
           label={ti(lang, "タイムゾーン (IANA)", "Timezone (IANA)")}
           value={s.timezone}
           onChange={(v) => update("timezone", v)}
+          autoCapitalize="none"
+          autoComplete="off"
+          placeholder="Asia/Manila"
           help={ti(lang, "デフォルト: Asia/Manila", "Default: Asia/Manila")}
         />
       </Section>
@@ -352,23 +373,37 @@ function TextField({
   value,
   onChange,
   help,
+  placeholder,
+  type,
+  inputMode,
+  autoCapitalize,
+  autoComplete,
 }: {
   label: string;
   value: string;
   onChange: (s: string) => void;
   help?: string;
+  placeholder?: string;
+  type?: "text" | "email" | "tel" | "url";
+  inputMode?: "text" | "email" | "tel" | "url" | "numeric";
+  autoCapitalize?: "off" | "none" | "sentences" | "words" | "characters";
+  autoComplete?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">{label}</span>
-      <input
-        type="text"
+      <TextFieldButton
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-gold/60 focus:outline-none"
+        onChange={onChange}
+        label={label}
+        placeholder={placeholder}
+        type={type}
+        inputMode={inputMode}
+        autoCapitalize={autoCapitalize}
+        autoComplete={autoComplete}
       />
-      {help && <span className="admin-meta">{help}</span>}
-    </label>
+      {help && <span className="admin-meta normal-case tracking-normal">{help}</span>}
+    </div>
   );
 }
 

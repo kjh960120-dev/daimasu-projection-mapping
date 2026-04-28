@@ -7,6 +7,7 @@ import type { RestaurantSettings, SeatingSlot } from "@/lib/db/types";
 import { autoAllocateSeats, formatPHP } from "@/lib/domain/reservation";
 import type { AdminLang } from "@/lib/auth/admin-lang";
 import { NumPadInput } from "../../_components/num-pad-input";
+import { TextFieldButton } from "../../_components/text-field-button";
 
 interface DayCell {
   date: string;
@@ -368,31 +369,41 @@ export function ManualBookingForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={ti("お客様名", "Guest name")}>
-            <input
-              type="text"
+            <TextFieldButton
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={inputCls}
-              required
+              onChange={setName}
+              label={ti("お客様名", "Guest name")}
+              placeholder={ti("例: 山田 太郎", "e.g. Yamada Taro")}
+              autoCapitalize="words"
+              autoComplete="name"
               maxLength={80}
+              required
             />
           </Field>
           <Field label={ti("電話番号", "Phone")}>
-            <input
-              type="tel"
+            <TextFieldButton
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className={inputCls}
-              required
+              onChange={setPhone}
+              label={ti("電話番号", "Phone")}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="+63 9XX XXX XXXX"
               maxLength={30}
+              required
+              hint={ti("国番号 +63 から", "Start with country code +63")}
             />
           </Field>
           <Field label={ti("メール (任意)", "Email (optional)")}>
-            <input
-              type="email"
+            <TextFieldButton
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputCls}
+              onChange={setEmail}
+              label={ti("メール", "Email")}
+              type="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoComplete="email"
+              placeholder="guest@example.com"
               maxLength={254}
             />
           </Field>
@@ -409,12 +420,21 @@ export function ManualBookingForm({
         </div>
 
         <Field label={ti("備考 (アレルギー・記念日など)", "Notes (allergies, occasion)")}>
-          <textarea
+          <TextFieldButton
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
+            onChange={setNotes}
+            label={ti("備考", "Notes")}
+            placeholder={ti(
+              "例: 乳製品アレルギー / 誕生日サプライズ",
+              "e.g. dairy allergy, birthday surprise"
+            )}
+            multiline
+            rows={4}
             maxLength={280}
-            className={inputCls}
+            hint={ti(
+              "Telegram / メールでスタッフに共有されます。",
+              "Visible to staff in Telegram / email."
+            )}
           />
         </Field>
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Trash2, Plus } from "lucide-react";
 import type { ClosedDate } from "@/lib/db/types";
 import type { AdminLang } from "@/lib/auth/admin-lang";
+import { TextFieldButton } from "../_components/text-field-button";
 
 export function ClosedDatesManager({
   initial,
@@ -101,20 +102,21 @@ export function ClosedDatesManager({
             className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
-          {ti("理由 (内部用・任意)", "Reason (internal, optional)")}
-          <input
-            type="text"
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
+            {ti("理由 (内部用・任意)", "Reason (internal, optional)")}
+          </span>
+          <TextFieldButton
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            maxLength={140}
+            onChange={setReason}
+            label={ti("休業の理由", "Closed-date reason")}
             placeholder={ti(
               "例: 貸切 / 店休 / 祝日",
               "e.g. private buyout, holiday, owner-off"
             )}
-            className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
+            maxLength={140}
           />
-        </label>
+        </div>
         <button
           type="submit"
           disabled={pending || !date}
