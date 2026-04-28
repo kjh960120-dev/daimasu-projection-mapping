@@ -132,4 +132,35 @@ describe("schemas — zod validators reject obviously bad input", () => {
     const r = createReservationSchema.safeParse(base);
     expect(r.success).toBe(false);
   });
+
+  it("strips CR/LF/TAB from name, phone, notes (header-injection defense)", async () => {
+    const { createReservationSchema } = await import("@/lib/domain/schemas");
+    const r = createReservationSchema.parse({
+      service_date: "2026-06-01",
+      seating: "s1" as const,
+      party_size: 2,
+      guest_name: "Hello\r\nBcc: attacker@evil.com",
+      guest_email: "OK@OK.COM ",
+      guest_phone: "+63\t917\n0000\r000",
+      notes: "line1\nline2\rline3",
+    });
+    expect(r.guest_name).toBe("Hello Bcc: attacker@evil.com");
+    expect(r.guest_email).toBe("ok@ok.com"); // trimmed + lowercased
+    expect(r.guest_phone).toBe("+63 917 0000 000");
+    expect(r.notes).toBe("line1 line2 line3");
+  });
+
+  it("rejects notes longer than 280 chars (phishing-surface cap)", async () => {
+    const { createReservationSchema } = await import("@/lib/domain/schemas");
+    const r = createReservationSchema.safeParse({
+      service_date: "2026-06-01",
+      seating: "s1" as const,
+      party_size: 2,
+      guest_name: "T",
+      guest_email: "a@b.com",
+      guest_phone: "+639170000000",
+      notes: "x".repeat(281),
+    });
+    expect(r.success).toBe(false);
+  });
 });

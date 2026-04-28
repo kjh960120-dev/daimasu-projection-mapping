@@ -25,11 +25,16 @@ export async function getAdmin(): Promise<AdminUser | null> {
     data: { user },
   } = await sb.auth.getUser();
   if (!user || !user.email) return null;
+  // Belt-and-braces: refuse unconfirmed magic-link sessions (audit fix P2-3).
+  if (!user.email_confirmed_at) return null;
 
+  // Exact, case-insensitive match — `admin_owners.email` is `citext`. Avoid
+  // `.ilike` so SQL pattern wildcards in an attacker's email cannot match
+  // adjacent rows (audit fix C-2).
   const { data: row } = await sb
     .from("admin_owners")
     .select("email,display_name")
-    .ilike("email", user.email)
+    .eq("email", user.email.trim().toLowerCase())
     .maybeSingle<{ email: string; display_name: string | null }>();
   if (!row) return null;
   return { id: user.id, email: row.email, display_name: row.display_name };

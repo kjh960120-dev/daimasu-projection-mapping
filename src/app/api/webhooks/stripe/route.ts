@@ -50,6 +50,24 @@ export async function POST(req: NextRequest) {
 
   const sb = adminClient();
 
+  // P1-5 fix: universal dedup. INSERT into webhook_events first; on duplicate
+  // key (Stripe replay) ack-and-noop. Saves audit_log row duplicates and
+  // guarantees handlers run exactly once per event.id.
+  const { error: dedupErr } = await sb.from("webhook_events").insert({
+    event_id: event.id,
+    source: "stripe",
+    event_type: event.type,
+  });
+  if (dedupErr) {
+    if (dedupErr.message.includes("duplicate key")) {
+      return NextResponse.json({ ok: true, event_id: event.id, replay: true });
+    }
+    return NextResponse.json(
+      { ok: false, reason: `dedup_failed:${dedupErr.message}` },
+      { status: 500 }
+    );
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed":
@@ -139,13 +157,18 @@ async function onChargeRefunded(event: Stripe.Event, sb: SbClient) {
   if (!reservationId) return;
 
   // Was the refund initiated by /cancel API? If so, the payments row already
-  // exists. We treat the webhook as confirmation (no-op aside from audit).
-  const refundCentavos = (charge.amount_refunded ?? 0) - (charge.amount_captured ?? charge.amount); // negative
+  // exists. The webhook is confirmation (no-op aside from audit).
+  // P1-1 fix: report the refunded amount, not "refunded - captured" math.
+  const totalRefundedCentavos = charge.amount_refunded ?? 0;
   await sb.from("audit_log").insert({
     actor: "webhook",
     reservation_id: reservationId,
     action: "stripe.refund.confirmed",
-    after_data: { stripe_event: event.id, charge_id: charge.id, refund_centavos: refundCentavos } as never,
+    after_data: {
+      stripe_event: event.id,
+      charge_id: charge.id,
+      total_refunded_centavos: totalRefundedCentavos,
+    } as never,
   });
 }
 

@@ -13,7 +13,8 @@ export type ReservationStatus =
   | "cancelled_partial"
   | "cancelled_late"
   | "no_show"
-  | "completed";
+  | "completed"
+  | "expired";
 
 export type PaymentMethod = "cash" | "card" | "gcash" | "deposit_only";
 
@@ -81,6 +82,7 @@ export interface Reservation {
   cancelled_at: string | null;
   cancelled_by: "guest" | "staff" | "system" | null;
   source: "web" | "staff" | "phone" | "walkin";
+  stripe_checkout_session_id: string | null;
 }
 
 export interface Payment {

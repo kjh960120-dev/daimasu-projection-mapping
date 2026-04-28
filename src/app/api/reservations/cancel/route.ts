@@ -126,6 +126,11 @@ export async function POST(req: NextRequest) {
     .limit(1)
     .maybeSingle<{ provider_ref: string | null }>();
 
+  // P1-3 fix: minute-bucketed idempotency key. Stripe's idempotency window is
+  // 24h; a transient failure with a static key would replay the failure forever.
+  // The bucket lets retries within the same minute be idempotent (covers
+  // double-clicks) but the next minute's retry gets a fresh attempt.
+  const minuteBucket = Math.floor(Date.now() / 60_000);
   let stripeRefundId: string | null = null;
   if (refundCentavos > 0 && depositPayment?.provider_ref) {
     try {
@@ -136,7 +141,7 @@ export async function POST(req: NextRequest) {
           metadata: { reservation_id: reservation.id, tier },
         },
         {
-          idempotencyKey: `res:${reservation.id}:refund:${tier}:v1`,
+          idempotencyKey: `res:${reservation.id}:refund:${tier}:m${minuteBucket}`,
         }
       );
       stripeRefundId = refund.id;

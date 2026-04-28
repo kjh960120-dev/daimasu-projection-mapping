@@ -65,6 +65,7 @@ type ReservationInsert = {
   cancel_token_hash: string;
   cancel_token_expires_at: string;
   source?: "web" | "staff" | "phone" | "walkin";
+  stripe_checkout_session_id?: string | null;
 };
 
 type ReservationUpdate = Partial<{
@@ -80,6 +81,7 @@ type ReservationUpdate = Partial<{
   cancelled_by: "guest" | "staff" | "system" | null;
   cancel_token_hash: string;
   cancel_token_expires_at: string;
+  stripe_checkout_session_id: string | null;
 }>;
 
 type PaymentInsert = {

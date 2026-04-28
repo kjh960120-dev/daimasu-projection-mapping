@@ -162,6 +162,7 @@ function StatusPill({ status }: { status: Reservation["status"] }) {
     cancelled_full: "border-text-muted/40 text-text-muted",
     cancelled_partial: "border-text-muted/40 text-text-muted",
     cancelled_late: "border-text-muted/40 text-text-muted",
+    expired: "border-text-muted/30 text-text-muted/70",
   };
   const labels: Record<Reservation["status"], string> = {
     pending_payment: "Pending",
@@ -171,6 +172,7 @@ function StatusPill({ status }: { status: Reservation["status"] }) {
     cancelled_full: "Cancelled (100%)",
     cancelled_partial: "Cancelled (50%)",
     cancelled_late: "Cancelled (0%)",
+    expired: "Expired",
   };
   return (
     <span

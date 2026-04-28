@@ -26,9 +26,13 @@ export async function sendEmail(
   args: SendArgs
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const env = serverEnv();
-  const from = args.fromOverride ?? env.NEXT_PUBLIC_SITE_URL.includes("daimasu")
-    ? "DAIMASU Reservations <reservations@bar.daimasu.com.ph>"
-    : "DAIMASU Reservations <onboarding@resend.dev>";
+  // I-1 fix: parens around the ternary so `??` doesn't bind tighter than `?:`
+  // and silently always pick the second branch.
+  const from =
+    args.fromOverride ??
+    (env.NEXT_PUBLIC_SITE_URL.includes("daimasu")
+      ? "DAIMASU Reservations <reservations@bar.daimasu.com.ph>"
+      : "DAIMASU Reservations <onboarding@resend.dev>");
   try {
     const r = await resend().emails.send(
       { from, to: args.to, subject: args.subject, html: args.html },

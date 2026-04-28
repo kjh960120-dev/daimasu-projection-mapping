@@ -101,7 +101,14 @@ export async function POST(req: NextRequest) {
   // pre-issue an id so we can use it in the cancel-token + Stripe metadata
   const reservationId = crypto.randomUUID();
 
-  const tokenBundle = await issueCancelToken(reservationId);
+  // P1-2 fix: bound token TTL to "service date + 7 days" instead of a flat 90 days,
+  // so a leaked token from a forwarded email has a tight blast radius.
+  const ttlSeconds =
+    Math.max(
+      Math.floor((startsAt.getTime() - Date.now()) / 1000) + 7 * 86_400,
+      86_400 // floor: 24h, even for last-minute bookings
+    );
+  const tokenBundle = await issueCancelToken(reservationId, ttlSeconds);
 
   const insertRow: Partial<Reservation> = {
     id: reservationId,
@@ -179,13 +186,12 @@ export async function POST(req: NextRequest) {
     if (!session.url) throw new Error("Stripe returned no checkout URL");
     checkoutUrl = session.url;
 
-    // Persist the session id so the webhook can resolve back to the reservation
-    // even if metadata path is interrupted.
+    // Persist the Stripe session id so /api/cron/reap-pending can verify the
+    // session is truly expired before flipping status (audit fix C-3).
     await sb
       .from("reservations")
-      .update({ source: "web", notes: input.notes ?? null })
+      .update({ stripe_checkout_session_id: session.id })
       .eq("id", reservationId);
-    // (we keep notes already; no extra column needed for session id — metadata is the join key)
   } catch (err) {
     // Roll back the half-built reservation so the seat returns to the pool.
     await sb.from("reservations").delete().eq("id", reservationId);
