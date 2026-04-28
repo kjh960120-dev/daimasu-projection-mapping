@@ -73,7 +73,7 @@ export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
 export const adminCreateReservationSchema = z.object({
   service_date: dateString,
   seating: z.enum(["s1", "s2"]),
-  party_size: z.number().int().min(1).max(8),
+  party_size: z.number().int().min(1).max(20),
   guest_name: z.preprocess(cleanString, z.string().min(1).max(80)),
   guest_email: z.preprocess(
     (raw) => (typeof raw === "string" ? raw.trim().toLowerCase() : raw),
@@ -88,6 +88,13 @@ export const adminCreateReservationSchema = z.object({
   source: z.enum(["staff", "phone", "walkin"]),
   // Cash deposit already collected at the bar?
   deposit_received: z.boolean().default(false),
+  // Optional manually-picked seat numbers (1-indexed). When omitted/empty,
+  // the server auto-allocates the rightmost contiguous block.
+  seat_numbers: z
+    .array(z.number().int().min(1).max(20))
+    .max(20)
+    .optional()
+    .nullable(),
 });
 
 export type AdminCreateReservationInput = z.infer<

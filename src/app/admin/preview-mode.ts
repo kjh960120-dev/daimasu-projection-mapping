@@ -88,6 +88,7 @@ export const mockReservations: Reservation[] = [
     cancelled_by: null,
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_1",
+    seat_numbers: [5, 6, 7, 8],
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
@@ -119,6 +120,7 @@ export const mockReservations: Reservation[] = [
     cancelled_by: null,
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_2",
+    seat_numbers: [7, 8],
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
@@ -150,6 +152,7 @@ export const mockReservations: Reservation[] = [
     cancelled_by: null,
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_3",
+    seat_numbers: [3, 4, 5, 6, 7, 8],
   },
   {
     id: "44444444-4444-4444-4444-444444444444",
@@ -181,6 +184,7 @@ export const mockReservations: Reservation[] = [
     cancelled_by: null,
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_4",
+    seat_numbers: [6, 7, 8],
   },
   {
     id: "55555555-5555-5555-5555-555555555555",
@@ -212,6 +216,7 @@ export const mockReservations: Reservation[] = [
     cancelled_by: "system",
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_5",
+    seat_numbers: [7, 8],
   },
   {
     id: "66666666-6666-6666-6666-666666666666",
@@ -243,6 +248,7 @@ export const mockReservations: Reservation[] = [
     cancelled_by: "guest",
     source: "web",
     stripe_checkout_session_id: "cs_test_demo_6",
+    seat_numbers: [7, 8],
   },
 ];
 

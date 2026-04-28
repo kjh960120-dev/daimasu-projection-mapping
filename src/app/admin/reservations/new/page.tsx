@@ -32,11 +32,38 @@ export default async function NewReservationPage({
   const sp = await searchParams;
 
   let settings: RestaurantSettings | null;
-  const occupancy: Map<string, { s1: number; s2: number }> = new Map();
+  // Per-date+seating occupancy. Each entry holds:
+  //   - taken: number of pax (sum of party_size)
+  //   - seats: actual seat_numbers occupied
+  //   - bookings: small list of {name, seats} for tooltips on the picker
+  type SlotInfo = {
+    taken: number;
+    seats: number[];
+    bookings: { guest_name: string; seats: number[] }[];
+  };
+  const empty = (): SlotInfo => ({ taken: 0, seats: [], bookings: [] });
+  const occupancy: Map<string, { s1: SlotInfo; s2: SlotInfo }> = new Map();
   let closedDates: Set<string> = new Set();
 
   const today = todayIsoDate();
   const horizon = isoDateDaysAhead(30);
+
+  function pushBooking(
+    date: string,
+    seating: "s1" | "s2",
+    party_size: number,
+    seat_numbers: number[] | null,
+    guest_name: string
+  ) {
+    const cur = occupancy.get(date) ?? { s1: empty(), s2: empty() };
+    const slot = cur[seating];
+    slot.taken += party_size;
+    if (seat_numbers && seat_numbers.length > 0) {
+      slot.seats.push(...seat_numbers);
+      slot.bookings.push({ guest_name, seats: seat_numbers });
+    }
+    occupancy.set(date, cur);
+  }
 
   if (PREVIEW_MODE) {
     settings = mockSettings;
@@ -46,9 +73,7 @@ export default async function NewReservationPage({
         r.service_date >= today &&
         r.service_date <= horizon
       ) {
-        const cur = occupancy.get(r.service_date) ?? { s1: 0, s2: 0 };
-        cur[r.seating] += r.party_size;
-        occupancy.set(r.service_date, cur);
+        pushBooking(r.service_date, r.seating, r.party_size, r.seat_numbers, r.guest_name);
       }
     }
   } else {
@@ -63,12 +88,15 @@ export default async function NewReservationPage({
           .single<RestaurantSettings>(),
         sb
           .from("reservations")
-          .select("service_date,seating,party_size,status")
+          .select("service_date,seating,party_size,status,seat_numbers,guest_name")
           .gte("service_date", today)
           .lte("service_date", horizon)
           .in("status", ["confirmed", "pending_payment"])
           .returns<
-            Pick<Reservation, "service_date" | "seating" | "party_size" | "status">[]
+            Pick<
+              Reservation,
+              "service_date" | "seating" | "party_size" | "status" | "seat_numbers" | "guest_name"
+            >[]
           >(),
         sb
           .from("closed_dates")
@@ -79,9 +107,7 @@ export default async function NewReservationPage({
       ]);
     settings = settingsRow;
     for (const r of rows ?? []) {
-      const cur = occupancy.get(r.service_date) ?? { s1: 0, s2: 0 };
-      cur[r.seating] += r.party_size;
-      occupancy.set(r.service_date, cur);
+      pushBooking(r.service_date, r.seating, r.party_size, r.seat_numbers, r.guest_name);
     }
     closedDates = new Set((closed ?? []).map((c) => c.closed_date));
   }
@@ -104,11 +130,15 @@ export default async function NewReservationPage({
   const grid = [];
   for (let i = 0; i < 14; i++) {
     const date = isoDateDaysAhead(i);
-    const occ = occupancy.get(date) ?? { s1: 0, s2: 0 };
+    const occ = occupancy.get(date) ?? { s1: empty(), s2: empty() };
     grid.push({
       date,
-      s1_taken: occ.s1,
-      s2_taken: occ.s2,
+      s1_taken: occ.s1.taken,
+      s1_seats: occ.s1.seats,
+      s1_bookings: occ.s1.bookings,
+      s2_taken: occ.s2.taken,
+      s2_seats: occ.s2.seats,
+      s2_bookings: occ.s2.bookings,
       closed: closedDates.has(date),
     });
   }

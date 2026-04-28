@@ -26,6 +26,8 @@ type SeatBookingShape = {
   party_size: number;
   status: string;
   service_starts_at: string;
+  /** When present, takes precedence over auto-sequential allocation. */
+  seat_numbers?: number[] | null;
 };
 
 interface Props {
@@ -63,16 +65,29 @@ export function CounterSeatMap({
     return t !== 0 ? t : a.guest_name.localeCompare(b.guest_name);
   });
 
-  // Allocate sequential seats. seatToBooking[i] = booking or null.
+  // Use actual seat_numbers when the booking has them; fall back to
+  // sequential allocation from seat 1 for legacy rows missing the column.
   const seatToBooking: Array<SeatBookingShape | null> = Array(totalSeats).fill(null);
-  let idx = 0;
+  let nextLegacy = 1;
   for (const b of sorted) {
-    for (let i = 0; i < b.party_size && idx < totalSeats; i++) {
-      seatToBooking[idx++] = b;
+    if (b.seat_numbers && b.seat_numbers.length > 0) {
+      for (const s of b.seat_numbers) {
+        if (s >= 1 && s <= totalSeats) seatToBooking[s - 1] = b;
+      }
+    } else {
+      // Legacy fallback: leftmost free seats.
+      let assigned = 0;
+      while (assigned < b.party_size && nextLegacy <= totalSeats) {
+        if (seatToBooking[nextLegacy - 1] === null) {
+          seatToBooking[nextLegacy - 1] = b;
+          assigned++;
+        }
+        nextLegacy++;
+      }
     }
   }
 
-  const taken = idx;
+  const taken = seatToBooking.filter((s) => s !== null).length;
   const remaining = Math.max(0, totalSeats - taken);
   const isFull = remaining === 0 && totalSeats > 0;
 

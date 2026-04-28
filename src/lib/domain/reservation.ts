@@ -108,3 +108,51 @@ export function priceBreakdown(
 export function blocksCapacity(status: ReservationStatus): boolean {
   return status === "pending_payment" || status === "confirmed";
 }
+
+/**
+ * Auto-allocate the rightmost contiguous block of `partySize` seats.
+ * Used client-side to preview the assignment before submit; the canonical
+ * allocator is `allocate_seats_or_throw` PL/pgSQL (with FOR UPDATE).
+ *
+ * Rule: fill from seat #total (back of counter) toward seat #1, requiring
+ * a contiguous block. Returns null if no block fits.
+ */
+export function autoAllocateSeats(
+  totalSeats: number,
+  takenSeats: ReadonlySet<number>,
+  partySize: number
+): number[] | null {
+  if (partySize < 1 || partySize > totalSeats) return null;
+  for (let end = totalSeats; end >= partySize; end--) {
+    const start = end - partySize + 1;
+    let ok = true;
+    for (let s = start; s <= end; s++) {
+      if (takenSeats.has(s)) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      return Array.from({ length: partySize }, (_, i) => start + i);
+    }
+  }
+  return null;
+}
+
+/** Returns true if the manually-chosen seats form a valid pick. */
+export function validateSeatPick(
+  totalSeats: number,
+  takenSeats: ReadonlySet<number>,
+  partySize: number,
+  picked: readonly number[]
+): { ok: true } | { ok: false; reason: "count" | "range" | "occupied" | "duplicate" } {
+  if (picked.length !== partySize) return { ok: false, reason: "count" };
+  const seen = new Set<number>();
+  for (const s of picked) {
+    if (s < 1 || s > totalSeats) return { ok: false, reason: "range" };
+    if (seen.has(s)) return { ok: false, reason: "duplicate" };
+    seen.add(s);
+    if (takenSeats.has(s)) return { ok: false, reason: "occupied" };
+  }
+  return { ok: true };
+}

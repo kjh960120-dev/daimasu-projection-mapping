@@ -73,11 +73,16 @@ export async function POST(req: NextRequest) {
 
   // 3. atomic capacity check via SQL function — throws on closed/full
   const startsAt = serviceStartsAt(input.service_date, input.seating, settings);
-  const { error: capErr } = await sb.rpc("assert_capacity_or_throw", {
-    p_service_date: input.service_date,
-    p_seating: input.seating,
-    p_party_size: input.party_size,
-  });
+  // Auto-allocate seats from the right (public path never picks manually).
+  const { data: allocatedSeats, error: capErr } = await sb.rpc(
+    "allocate_seats_or_throw",
+    {
+      p_service_date: input.service_date,
+      p_seating: input.seating,
+      p_party_size: input.party_size,
+      p_requested: null,
+    }
+  );
   if (capErr) {
     if (capErr.message.includes("closed_date")) {
       return errJson({ code: "closed_date" }, 409);
@@ -87,6 +92,7 @@ export async function POST(req: NextRequest) {
     }
     return errJson({ code: "internal", reason: capErr.message }, 500);
   }
+  const seatNumbers = (allocatedSeats as number[] | null) ?? null;
 
   // 4. price snapshot + INSERT (within the same connection so the FOR UPDATE
   //    lock from the RPC stays held). With supabase-js we rely on DB-side
@@ -129,6 +135,7 @@ export async function POST(req: NextRequest) {
     cancel_token_hash: tokenBundle.hash,
     cancel_token_expires_at: tokenBundle.expiresAt.toISOString(),
     source: "web",
+    seat_numbers: seatNumbers,
   };
 
   const { error: insertErr } = await sb.from("reservations").insert(insertRow);

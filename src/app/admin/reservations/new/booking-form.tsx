@@ -2,16 +2,20 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, X, Armchair } from "lucide-react";
 import type { RestaurantSettings, SeatingSlot } from "@/lib/db/types";
-import { formatPHP } from "@/lib/domain/reservation";
+import { autoAllocateSeats, formatPHP } from "@/lib/domain/reservation";
 import type { AdminLang } from "@/lib/auth/admin-lang";
 import { NumPadInput } from "../../_components/num-pad-input";
 
 interface DayCell {
   date: string;
   s1_taken: number;
+  s1_seats: number[];
+  s1_bookings: { guest_name: string; seats: number[] }[];
   s2_taken: number;
+  s2_seats: number[];
+  s2_bookings: { guest_name: string; seats: number[] }[];
   closed: boolean;
 }
 
@@ -41,6 +45,8 @@ export function ManualBookingForm({
   const [notes, setNotes] = useState("");
   const [source, setSource] = useState<"phone" | "walkin" | "staff">("phone");
   const [depositReceived, setDepositReceived] = useState(false);
+  const [seatMode, setSeatMode] = useState<"auto" | "manual">("auto");
+  const [pickedSeats, setPickedSeats] = useState<number[]>([]);
   const [status, setStatus] = useState<"idle" | "pending" | "ok" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -55,11 +61,61 @@ export function ManualBookingForm({
       ? cellAvail.s1_taken
       : cellAvail.s2_taken
     : 0;
+  const takenSeatNumbers: number[] = useMemo(() => {
+    if (!cellAvail) return [];
+    return seating === "s1" ? cellAvail.s1_seats : cellAvail.s2_seats;
+  }, [cellAvail, seating]);
+  const slotBookings = useMemo(() => {
+    if (!cellAvail) return [];
+    return seating === "s1" ? cellAvail.s1_bookings : cellAvail.s2_bookings;
+  }, [cellAvail, seating]);
+  const takenSet = useMemo(() => new Set(takenSeatNumbers), [takenSeatNumbers]);
   const seatRemaining = Math.max(0, settings.online_seats - seatTaken);
   const dateClosed = cellAvail?.closed ?? false;
 
   const courseTotal = settings.course_price_centavos * partySize;
   const deposit = Math.floor((courseTotal * settings.deposit_pct) / 100);
+
+  // Auto-suggest the seat block (right-back fill) whenever date / seating /
+  // partySize changes and the user is in auto mode.
+  const autoSuggestion = useMemo(
+    () => autoAllocateSeats(settings.online_seats, takenSet, partySize),
+    [settings.online_seats, takenSet, partySize]
+  );
+
+  // When switching slots, clear manual picks (different occupied set).
+  // Using setState-during-render — React's recommended pattern for
+  // resetting state on prop change, avoids the setState-in-effect lint.
+  const slotKey = `${date}-${seating}`;
+  const [lastSlotKey, setLastSlotKey] = useState(slotKey);
+  if (lastSlotKey !== slotKey) {
+    setLastSlotKey(slotKey);
+    setPickedSeats([]);
+  }
+
+  function toggleSeat(n: number) {
+    if (takenSet.has(n)) return;
+    setPickedSeats((prev) => {
+      const has = prev.includes(n);
+      if (has) return prev.filter((s) => s !== n);
+      if (prev.length >= partySize) {
+        // Drop the oldest pick to keep length capped.
+        return [...prev.slice(1), n];
+      }
+      return [...prev, n].sort((a, b) => a - b);
+    });
+  }
+  function clearPicks() {
+    setPickedSeats([]);
+  }
+  function fillFromAuto() {
+    if (autoSuggestion) setPickedSeats([...autoSuggestion]);
+  }
+
+  const manualPickValid =
+    seatMode === "manual" &&
+    pickedSeats.length === partySize &&
+    pickedSeats.every((n) => !takenSet.has(n));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +136,10 @@ export function ManualBookingForm({
           notes: notes.trim() || null,
           source,
           deposit_received: depositReceived,
+          seat_numbers:
+            seatMode === "manual" && pickedSeats.length === partySize
+              ? pickedSeats
+              : null,
         }),
       });
       const data = (await res.json()) as {
@@ -198,6 +258,114 @@ export function ManualBookingForm({
           </Field>
         </div>
 
+        {/* Seat picker — auto by default, opt-in manual */}
+        <div className="border border-border bg-card p-4">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
+                {ti("席の指定", "Seat assignment")}
+              </p>
+              <p className="mt-0.5 admin-meta normal-case tracking-normal">
+                {seatMode === "auto"
+                  ? autoSuggestion
+                    ? ti(
+                        `自動: 席 ${autoSuggestion.join(", ")} (右奥から詰めて配置)`,
+                        `Auto: seats ${autoSuggestion.join(", ")} (filled from the back)`
+                      )
+                    : ti("自動: 連続した空き席なし", "Auto: no contiguous block")
+                  : ti(
+                      `手動: ${pickedSeats.length}/${partySize} 選択中`,
+                      `Manual: ${pickedSeats.length}/${partySize} picked`
+                    )}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 border border-border bg-background p-0.5">
+              <button
+                type="button"
+                onClick={() => setSeatMode("auto")}
+                className={
+                  seatMode === "auto"
+                    ? "px-3 py-1.5 text-[12px] font-medium uppercase tracking-[0.10em] bg-gold text-background"
+                    : "px-3 py-1.5 text-[12px] font-medium uppercase tracking-[0.10em] text-text-secondary hover:text-foreground"
+                }
+                style={seatMode === "auto" ? { color: "var(--background)" } : undefined}
+              >
+                {ti("自動", "Auto")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSeatMode("manual");
+                  if (pickedSeats.length === 0 && autoSuggestion) {
+                    setPickedSeats([...autoSuggestion]);
+                  }
+                }}
+                className={
+                  seatMode === "manual"
+                    ? "px-3 py-1.5 text-[12px] font-medium uppercase tracking-[0.10em] bg-gold text-background"
+                    : "px-3 py-1.5 text-[12px] font-medium uppercase tracking-[0.10em] text-text-secondary hover:text-foreground"
+                }
+                style={seatMode === "manual" ? { color: "var(--background)" } : undefined}
+              >
+                {ti("手動", "Manual")}
+              </button>
+            </div>
+          </div>
+
+          <SeatPickerGrid
+            totalSeats={settings.online_seats}
+            takenSet={takenSet}
+            pickedSeats={pickedSeats}
+            autoSuggestion={seatMode === "auto" ? autoSuggestion : null}
+            onToggle={toggleSeat}
+            disabled={seatMode === "auto"}
+            slotBookings={slotBookings}
+            lang={lang}
+          />
+
+          {seatMode === "manual" && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <span className={
+                pickedSeats.length === 0
+                  ? "admin-meta"
+                  : manualPickValid
+                    ? "text-[12px] font-medium text-foreground"
+                    : "text-[12px] font-medium text-amber-400"
+              }>
+                {pickedSeats.length === 0
+                  ? ti("空席をタップして選択", "Tap empty seats to pick")
+                  : manualPickValid
+                    ? ti(
+                        `席 ${pickedSeats.join(", ")} を確保 ✓`,
+                        `Seats ${pickedSeats.join(", ")} ready ✓`
+                      )
+                    : ti(
+                        `あと ${partySize - pickedSeats.length} 席選んでください`,
+                        `Pick ${partySize - pickedSeats.length} more`
+                      )}
+              </span>
+              <div className="flex gap-2 text-[11px] uppercase tracking-[0.10em]">
+                <button
+                  type="button"
+                  onClick={fillFromAuto}
+                  disabled={!autoSuggestion}
+                  className="border border-border px-3 py-1.5 text-text-secondary hover:border-gold/40 hover:text-gold disabled:opacity-40"
+                >
+                  {ti("自動で埋める", "Fill auto")}
+                </button>
+                <button
+                  type="button"
+                  onClick={clearPicks}
+                  disabled={pickedSeats.length === 0}
+                  className="border border-border px-3 py-1.5 text-text-secondary hover:border-gold/40 disabled:opacity-40"
+                >
+                  {ti("クリア", "Clear")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={ti("お客様名", "Guest name")}>
             <input
@@ -308,7 +476,12 @@ export function ManualBookingForm({
 
         <button
           type="submit"
-          disabled={status === "pending" || dateClosed || partySize > seatRemaining}
+          disabled={
+            status === "pending" ||
+            dateClosed ||
+            partySize > seatRemaining ||
+            (seatMode === "manual" && !manualPickValid)
+          }
           className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium tracking-[0.14em] disabled:opacity-50"
         >
           {status === "pending" ? (
@@ -335,7 +508,12 @@ export function ManualBookingForm({
                 )
               : errorMsg === "closed_date"
                 ? ti("選択した日は休業日です。", "Selected date is closed.")
-                : errorMsg ?? ti("登録に失敗しました。", "Failed to save.")}
+                : errorMsg === "seat_conflict"
+                  ? ti(
+                      "選択した席は既に予約されています。再選択してください。",
+                      "Selected seats conflict. Please re-pick."
+                    )
+                  : errorMsg ?? ti("登録に失敗しました。", "Failed to save.")}
           </p>
         )}
       </div>
@@ -345,6 +523,126 @@ export function ManualBookingForm({
 
 const inputCls =
   "border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-gold/60 focus:outline-none";
+
+function SeatPickerGrid({
+  totalSeats,
+  takenSet,
+  pickedSeats,
+  autoSuggestion,
+  onToggle,
+  disabled,
+  slotBookings,
+  lang,
+}: {
+  totalSeats: number;
+  takenSet: Set<number>;
+  pickedSeats: number[];
+  autoSuggestion: number[] | null;
+  onToggle: (n: number) => void;
+  disabled: boolean;
+  slotBookings: { guest_name: string; seats: number[] }[];
+  lang: AdminLang;
+}) {
+  const ti = (ja: string, en: string) => (lang === "ja" ? ja : en);
+  const pickedSet = new Set(pickedSeats);
+  const autoSet = new Set(autoSuggestion ?? []);
+
+  return (
+    <div>
+      {/* Counter rail */}
+      <div className="mb-2 flex items-center justify-between border-y border-gold/40 bg-gold/[0.04] px-3 py-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-gold">
+          {ti("檜カウンター 8m (奥 →)", "Hinoki counter (back →)")}
+        </span>
+        <span className="font-mono admin-num text-[11px] text-text-muted">
+          {takenSet.size}/{totalSeats}
+        </span>
+      </div>
+
+      <div
+        className="grid gap-1.5"
+        style={{
+          gridTemplateColumns: `repeat(${Math.min(totalSeats, 8)}, minmax(0, 1fr))`,
+        }}
+      >
+        {Array.from({ length: totalSeats }, (_, i) => {
+          const n = i + 1;
+          const isTaken = takenSet.has(n);
+          const isPicked = pickedSet.has(n);
+          const isAuto = autoSet.has(n);
+          const owner = slotBookings.find((b) => b.seats.includes(n));
+          let cls =
+            "relative flex aspect-square flex-col items-center justify-center border text-[11px] transition-colors";
+          if (isTaken) {
+            cls +=
+              " border-red-500/60 bg-red-500/[0.12] text-red-400 cursor-not-allowed";
+          } else if (isPicked) {
+            cls +=
+              " border-gold bg-gold/20 text-gold font-semibold cursor-pointer";
+          } else if (isAuto) {
+            cls +=
+              " border-gold/50 bg-gold/[0.08] text-gold/80 cursor-default";
+          } else {
+            cls +=
+              " border-border bg-background text-text-secondary cursor-pointer hover:border-gold/40 hover:text-foreground";
+          }
+          if (disabled && !isTaken) cls += " opacity-90";
+          return (
+            <button
+              key={n}
+              type="button"
+              disabled={isTaken || disabled}
+              onClick={() => onToggle(n)}
+              className={cls}
+              title={
+                isTaken
+                  ? `${n}番 — 予約済${owner ? ` (${owner.guest_name})` : ""}`
+                  : isPicked
+                    ? ti(`${n}番 — 選択中`, `Seat ${n} — picked`)
+                    : isAuto
+                      ? ti(`${n}番 — 自動候補`, `Seat ${n} — auto`)
+                      : ti(`${n}番 — 空席`, `Seat ${n} — open`)
+              }
+            >
+              <span className="absolute left-1 top-0.5 font-mono text-[9px] opacity-70">
+                {n}
+              </span>
+              {isTaken ? (
+                <X size={20} strokeWidth={2.5} aria-hidden="true" />
+              ) : isPicked ? (
+                <Armchair size={20} strokeWidth={2.5} aria-hidden="true" />
+              ) : (
+                <Armchair size={18} strokeWidth={1.5} aria-hidden="true" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-2 flex flex-wrap items-center gap-3 admin-meta">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-flex h-3 w-3 items-center justify-center border border-red-500/60 bg-red-500/15">
+            <X size={8} strokeWidth={3} className="text-red-400" />
+          </span>
+          {ti("予約済", "booked")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 border border-gold bg-gold/20" />
+          {ti("選択中", "picked")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 border border-gold/50 bg-gold/[0.08]" />
+          {ti("自動候補", "auto")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 border border-border bg-background" />
+          {ti("空席", "open")}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function SeatingButton({
   active,

@@ -58,30 +58,38 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Atomic capacity check — same SQL function the public path uses.
-  const { error: capErr } = await sb.rpc("assert_capacity_or_throw", {
-    p_service_date: input.service_date,
-    p_seating: input.seating,
-    p_party_size: input.party_size,
-  });
-  if (capErr) {
-    if (capErr.message.includes("closed_date")) {
-      return NextResponse.json(
-        { ok: false, error: { code: "closed_date" } },
-        { status: 409 }
-      );
+  // Atomic seat allocation. Manual mode validates the requested seats;
+  // omitting them triggers rightmost-contiguous auto-allocation.
+  const requested =
+    input.seat_numbers && input.seat_numbers.length === input.party_size
+      ? input.seat_numbers
+      : null;
+  const { data: allocatedSeats, error: capErr } = await sb.rpc(
+    "allocate_seats_or_throw",
+    {
+      p_service_date: input.service_date,
+      p_seating: input.seating,
+      p_party_size: input.party_size,
+      p_requested: requested,
     }
-    if (capErr.message.includes("capacity_exceeded")) {
-      return NextResponse.json(
-        { ok: false, error: { code: "capacity_exceeded" } },
-        { status: 409 }
-      );
+  );
+  if (capErr) {
+    const msg = capErr.message || "";
+    if (msg.includes("closed_date")) {
+      return NextResponse.json({ ok: false, error: { code: "closed_date" } }, { status: 409 });
+    }
+    if (msg.includes("capacity_exceeded")) {
+      return NextResponse.json({ ok: false, error: { code: "capacity_exceeded" } }, { status: 409 });
+    }
+    if (msg.includes("seat_occupied") || msg.includes("seat_count_mismatch") || msg.includes("seat_out_of_range")) {
+      return NextResponse.json({ ok: false, error: { code: "seat_conflict", reason: msg } }, { status: 409 });
     }
     return NextResponse.json(
-      { ok: false, error: { code: "internal", reason: capErr.message } },
+      { ok: false, error: { code: "internal", reason: msg } },
       { status: 500 }
     );
   }
+  const seatNumbers = (allocatedSeats as number[] | null) ?? null;
 
   const startsAt = serviceStartsAt(input.service_date, input.seating, settings);
   const { deposit, balance } = priceBreakdown(
@@ -117,6 +125,7 @@ export async function POST(req: NextRequest) {
     cancel_token_hash: tokenBundle.hash,
     cancel_token_expires_at: tokenBundle.expiresAt.toISOString(),
     source: input.source,
+    seat_numbers: seatNumbers,
   };
 
   const { error: insertErr } = await sb.from("reservations").insert(insertRow);

@@ -83,6 +83,8 @@ export interface Reservation {
   cancelled_by: "guest" | "staff" | "system" | null;
   source: "web" | "staff" | "phone" | "walkin";
   stripe_checkout_session_id: string | null;
+  /** 1-indexed counter seats assigned to this booking (rightmost = back of bar). */
+  seat_numbers: number[] | null;
 }
 
 export interface Payment {
