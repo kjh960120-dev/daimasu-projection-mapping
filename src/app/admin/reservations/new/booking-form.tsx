@@ -119,8 +119,32 @@ export function ManualBookingForm({
     pickedSeats.length === partySize &&
     pickedSeats.every((n) => !takenSet.has(n));
 
+  // Required-field validation. The phone "+63 " prefix is the visual
+  // hint we pre-fill; treat it as empty until the operator types digits
+  // after it.
+  const trimmedName = name.trim();
+  const trimmedPhone = phone.trim();
+  const phoneHasDigits = /\d/.test(trimmedPhone.replace(/^\+?\d{1,3}\s*/, ""));
+  const nameMissing = trimmedName.length === 0;
+  const phoneMissing = trimmedPhone.length === 0 || !phoneHasDigits;
+  const partySizeMissing = partySize < 1;
+
+  // Show validation only after the first submit attempt (avoids
+  // flashing errors at the user before they touch anything).
+  const [showValidation, setShowValidation] = useState(false);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    setShowValidation(true);
+
+    // Block at the client when required text fields are empty so
+    // operator gets immediate feedback (zod also rejects server-side).
+    if (nameMissing || phoneMissing || partySizeMissing) {
+      setStatus("error");
+      setErrorMsg("validation");
+      return;
+    }
+
     setStatus("pending");
     setErrorMsg(null);
     try {
@@ -156,7 +180,7 @@ export function ManualBookingForm({
       }
       setStatus("ok");
       if (data.reservation_id) {
-        router.push(`/admin/reservations/${data.reservation_id}`);
+        router.push(`/admin/reservations/${data.reservation_id}?confirmed=1`);
       }
     } catch (err) {
       setStatus("error");
@@ -401,23 +425,28 @@ export function ManualBookingForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={ti("お客様名", "Guest name")}>
+          <Field label={ti("お客様名 *", "Guest name *")}>
             <TextFieldButton
               value={name}
               onChange={setName}
-              label={ti("お客様名", "Guest name")}
+              label={ti("お客様名 (必須)", "Guest name (required)")}
               placeholder={ti("例: 山田 太郎", "e.g. Yamada Taro")}
               autoCapitalize="words"
               autoComplete="name"
               maxLength={80}
               required
             />
+            {showValidation && nameMissing && (
+              <span className="text-[12px] font-medium text-red-400">
+                {ti("お客様名が入力されていません", "Guest name is required")}
+              </span>
+            )}
           </Field>
-          <Field label={ti("電話番号", "Phone")}>
+          <Field label={ti("電話番号 *", "Phone *")}>
             <TextFieldButton
               value={phone}
               onChange={setPhone}
-              label={ti("電話番号", "Phone")}
+              label={ti("電話番号 (必須)", "Phone (required)")}
               type="tel"
               inputMode="tel"
               autoComplete="tel"
@@ -426,6 +455,11 @@ export function ManualBookingForm({
               required
               hint={ti("国番号 +63 から", "Start with country code +63")}
             />
+            {showValidation && phoneMissing && (
+              <span className="text-[12px] font-medium text-red-400">
+                {ti("電話番号が入力されていません", "Phone number is required")}
+              </span>
+            )}
           </Field>
           <Field label={ti("メール (任意)", "Email (optional)")}>
             <TextFieldButton
@@ -561,8 +595,29 @@ export function ManualBookingForm({
           )}
         </button>
 
-        {status === "error" && (
-          <p className="text-[12px] text-red-400">
+        {status === "error" && errorMsg === "validation" && (
+          <div className="border border-red-500/60 bg-red-500/[0.10] px-4 py-3">
+            <p className="text-[14px] font-bold text-red-400">
+              {ti(
+                "必須項目が入力されていません",
+                "Required fields are missing"
+              )}
+            </p>
+            <ul className="mt-1 list-disc pl-5 text-[13px] text-red-400/90">
+              {nameMissing && (
+                <li>{ti("お客様名", "Guest name")}</li>
+              )}
+              {phoneMissing && (
+                <li>{ti("電話番号", "Phone number")}</li>
+              )}
+              {partySizeMissing && (
+                <li>{ti("人数", "Party size")}</li>
+              )}
+            </ul>
+          </div>
+        )}
+        {status === "error" && errorMsg !== "validation" && (
+          <p className="text-[13px] text-red-400">
             {errorMsg === "capacity_exceeded"
               ? ti(
                   "席が足りません。別の時間帯を選んでください。",

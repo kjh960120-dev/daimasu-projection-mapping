@@ -10,7 +10,7 @@
  *  - audit log
  */
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ListChecks } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireAdminOrRedirect } from "@/lib/auth/admin";
 import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
@@ -48,11 +48,15 @@ interface RepeatStats {
 
 export default async function ReservationDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ confirmed?: string }>;
 }) {
   const lang = await getAdminLang();
   const { id } = await params;
+  const sp = await searchParams;
+  const justConfirmed = sp.confirmed === "1";
 
   let reservation: Reservation | null = null;
   let payments: Payment[] | null = null;
@@ -188,13 +192,56 @@ export default async function ReservationDetailPage({
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <Link
-        href="/admin/reservations"
-        className="mb-6 inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary hover:text-foreground"
-      >
-        <ArrowLeft size={14} />
-        {ti(lang, "予約一覧へ", "Reservations")}
-      </Link>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <Link
+          href="/admin/reservations"
+          className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary hover:text-foreground"
+        >
+          <ArrowLeft size={14} />
+          {ti(lang, "予約一覧へ", "Reservations")}
+        </Link>
+        <Link
+          href="/admin/reservations"
+          className="inline-flex items-center gap-2 border border-border bg-surface px-4 py-2 text-[12px] font-medium uppercase tracking-[0.12em] text-foreground hover:border-gold/50 hover:text-gold"
+        >
+          <ListChecks size={14} aria-hidden="true" />
+          {ti(lang, "予約一覧を見る", "View all reservations")}
+        </Link>
+      </div>
+
+      {justConfirmed && (
+        <div className="mb-6 flex items-start gap-3 border-2 border-gold bg-gold/[0.08] p-5">
+          <CheckCircle2 size={28} className="mt-0.5 shrink-0 text-gold" aria-hidden="true" />
+          <div className="flex-1">
+            <p className="text-[18px] font-semibold text-foreground">
+              {ti(lang, "予約が確定しました", "Reservation confirmed")}
+            </p>
+            <p className="mt-1 admin-body text-text-secondary">
+              {ti(
+                lang,
+                "下記の予約詳細をご確認ください。お客様への確認連絡もお忘れなく。",
+                "Review the booking details below. Don't forget to follow up with the guest."
+              )}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/admin/reservations"
+                className="inline-flex items-center gap-2 bg-gold px-4 py-2 text-[13px] font-semibold hover:opacity-90"
+                style={{ color: "var(--background)" }}
+              >
+                <ListChecks size={14} aria-hidden="true" />
+                {ti(lang, "予約一覧を見る", "View all reservations")}
+              </Link>
+              <Link
+                href="/admin/reservations/new"
+                className="inline-flex items-center gap-2 border border-gold/60 px-4 py-2 text-[13px] font-medium text-gold hover:bg-gold/10"
+              >
+                {ti(lang, "もう1件入力", "Add another")}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
         <div>
