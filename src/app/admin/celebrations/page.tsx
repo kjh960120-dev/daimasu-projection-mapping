@@ -6,7 +6,7 @@
  * for the kitchen + flowers + projection-mapping team.
  */
 import Link from "next/link";
-import { Sparkles, AlertTriangle, ArrowRight, Cake, Wine, Gift, MonitorPlay, Camera, Music } from "lucide-react";
+import { Sparkles, AlertTriangle, ArrowRight, Cake, Wine, Gift, MonitorPlay, Camera, Music, Phone, Package } from "lucide-react";
 import { requireAdminOrRedirect } from "@/lib/auth/admin";
 import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
@@ -312,15 +312,21 @@ function CelebrationCard({
             <span className="text-amber-400">{labels.arrives(c.surprise.arrives_first)}</span>
           </div>
           {c.surprise.bringing_items && (
-            <div className="admin-meta">
-              ⚠ {ti(lang, "持参/預かり: ", "Items: ")}
-              <span className="text-foreground">{c.surprise.bringing_items}</span>
+            <div className="flex items-start gap-1.5 admin-meta">
+              <Package size={12} className="mt-0.5 shrink-0 text-amber-400" aria-hidden="true" />
+              <span>
+                {ti(lang, "持参/預かり: ", "Items: ")}
+                <span className="text-foreground">{c.surprise.bringing_items}</span>
+              </span>
             </div>
           )}
           {c.surprise.coordination_phone && (
-            <div className="admin-meta">
-              📞 {ti(lang, "当日連絡: ", "Coord: ")}
-              <span className="text-foreground">{c.surprise.coordination_phone}</span>
+            <div className="flex items-center gap-1.5 admin-meta">
+              <Phone size={12} className="shrink-0 text-amber-400" aria-hidden="true" />
+              <span>
+                {ti(lang, "当日連絡: ", "Coord: ")}
+                <span className="text-foreground">{c.surprise.coordination_phone}</span>
+              </span>
             </div>
           )}
         </div>

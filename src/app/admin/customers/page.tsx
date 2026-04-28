@@ -254,7 +254,7 @@ export default async function CustomersPage({
                               `${c.celebration_count} celebrations on file`
                             )}
                           >
-                            🎉 {c.celebration_count}
+                            {ti(lang, `お祝い ${c.celebration_count}`, `Celebrations ${c.celebration_count}`)}
                           </span>
                         )}
                       </div>

@@ -4,7 +4,7 @@
  *
  * Pure server-renderable (no client hooks).
  */
-import { Sparkles, Cake, Gift, Wine, MonitorPlay, Camera, Music } from "lucide-react";
+import { Sparkles, Cake, Gift, Wine, MonitorPlay, Camera, Music, AlertCircle } from "lucide-react";
 import type { CelebrationData } from "@/lib/db/types";
 import type { AdminLang } from "@/lib/auth/admin-lang";
 
@@ -71,7 +71,7 @@ export function celebrationSummaryLine(
   const ti = (ja: string, en: string) => (lang === "ja" ? ja : en);
   const labels = celebrationLabels(lang);
   const parts: string[] = [];
-  parts.push(`🎉 ${labels.occasion(c.occasion)}`);
+  parts.push(labels.occasion(c.occasion));
   if (c.is_surprise) parts.push(ti("【サプライズ】", "[SURPRISE]"));
   if (c.celebrant.name) parts.push(ti(`主役: ${c.celebrant.name}`, `for: ${c.celebrant.name}`));
   const ds: string[] = [];
@@ -181,7 +181,11 @@ export function CelebrationReview({
                 {d.cake.size && <> · {d.cake.size}</>}
                 {d.cake.message && <> · 「{d.cake.message}」</>}
                 {d.cake.dietary && (
-                  <span className="ml-1 text-amber-400"> · ⚠ {d.cake.dietary}</span>
+                  <span className="ml-1 inline-flex items-center gap-1 text-amber-400">
+                    <span>·</span>
+                    <AlertCircle size={12} className="shrink-0" aria-hidden="true" />
+                    {d.cake.dietary}
+                  </span>
                 )}
               </DeliverableLi>
             )}

@@ -392,8 +392,9 @@ function SeatingBlock({
                   </td>
                   <td className="px-2 py-3 text-[13px] leading-snug">
                     {b.celebration && (
-                      <div className="mb-1 inline-block border border-gold/60 bg-gold/10 px-1.5 py-0.5 text-[11px] font-semibold text-gold print:border-black print:bg-transparent print:text-black">
-                        🎉 {celebrationSummaryLine(b.celebration, lang)}
+                      <div className="mb-1 inline-flex items-start gap-1 border border-gold/60 bg-gold/10 px-1.5 py-0.5 text-[11px] font-semibold text-gold print:border-black print:bg-transparent print:text-black">
+                        <Sparkles size={11} className="mt-0.5 shrink-0" aria-hidden="true" />
+                        {celebrationSummaryLine(b.celebration, lang)}
                       </div>
                     )}
                     {b.notes ? (
