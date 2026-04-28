@@ -34,6 +34,7 @@ yarn-error.log*
 # NEXT_PUBLIC_ values are already shipped client-side).
 .env*
 !.env.local
+!.env.example
 
 # vercel
 .vercel

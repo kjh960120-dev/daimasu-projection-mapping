@@ -13,12 +13,21 @@
     "lighthouse": "npm run build && (npm run serve:prod &) && sleep 3 && npm run lighthouse:mobile; pkill -f 'serve -s out -l 4173'"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.105.1",
+    "date-fns": "^4.1.0",
     "framer-motion": "^12.34.4",
+    "jose": "^6.2.3",
     "lucide-react": "^0.576.0",
+    "nanoid": "^5.1.9",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-day-picker": "^9.14.0",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "resend": "^6.12.2",
+    "stripe": "^22.1.0",
+    "twilio": "^6.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -28,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "lighthouse": "^13.1.0",
+    "supabase": "^2.95.6",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
