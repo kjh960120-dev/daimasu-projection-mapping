@@ -27,6 +27,10 @@ const schema = z.object({
   // Self-cancel HMAC + admin session secret
   CANCEL_TOKEN_SECRET: z.string().min(32),
 
+  // Shared secret for /api/cron/* — only Supabase pg_cron / curl with this
+  // bearer token may invoke. Generate: openssl rand -base64 48
+  CRON_SHARED_SECRET: z.string().min(32),
+
   // Public site URL (used in email templates + Stripe redirect)
   NEXT_PUBLIC_SITE_URL: z.string().url().default("https://bar.daimasu.com.ph"),
 
