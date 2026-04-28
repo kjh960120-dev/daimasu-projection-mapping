@@ -147,14 +147,14 @@ export default function ReservationForm() {
 
   const labelClass = "font-[family-name:var(--font-noto-serif)] text-[13px] font-medium tracking-[0.14em] text-gold";
   const inputClass =
-    "w-full border border-border bg-background/50 px-4 py-3 text-base text-foreground placeholder:text-text-muted/70 focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors";
+    "w-full border border-border bg-background/50 px-4 py-3 text-base text-foreground placeholder:text-text-muted focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40 transition-colors";
   const dateMissing = !selectedDate;
   const submitDisabled = status === "sending" || status === "redirecting";
 
   return (
     <div className="flex flex-col gap-7 border border-border bg-surface/50 p-6 sm:p-8">
       <div>
-        <p className="mb-2 text-xs tracking-[0.3em] text-gold/70">
+        <p className="mb-2 text-xs tracking-[0.3em] text-gold">
           {t("ご予約", "RESERVATIONS")}
         </p>
         <h3 className="mb-3 font-[family-name:var(--font-noto-serif)] text-2xl font-medium tracking-[0.02em] text-foreground">
@@ -190,7 +190,7 @@ export default function ReservationForm() {
         <div className="flex flex-col gap-3">
           <label className={labelClass}>
             {t("1. ご希望日", "1. Preferred date")}
-            <span className="ml-1 text-gold/40">*</span>
+            <span className="ml-1 text-gold">*</span>
           </label>
           <div
             className="rdp-daimasu flex justify-center border border-border bg-background/40 p-3 sm:p-4"
@@ -237,7 +237,7 @@ export default function ReservationForm() {
         <div className="flex flex-col gap-3">
           <label className={labelClass}>
             {t("2. ご希望時間", "2. Seating")}
-            <span className="ml-1 text-gold/40">*</span>
+            <span className="ml-1 text-gold">*</span>
           </label>
           <div
             role="radiogroup"
@@ -270,7 +270,7 @@ export default function ReservationForm() {
         <div className="flex flex-col gap-3">
           <label className={labelClass}>
             {t("3. 人数", "3. Party size")}
-            <span className="ml-1 text-gold/40">*</span>
+            <span className="ml-1 text-gold">*</span>
           </label>
           <div
             role="radiogroup"
@@ -308,7 +308,7 @@ export default function ReservationForm() {
           <div className="flex flex-col gap-2">
             <label htmlFor="res-name" className={labelClass}>
               {t("4. お名前", "4. Name")}
-              <span className="ml-1 text-gold/40">*</span>
+              <span className="ml-1 text-gold">*</span>
             </label>
             <input
               id="res-name"
@@ -325,7 +325,7 @@ export default function ReservationForm() {
           <div className="flex flex-col gap-2">
             <label htmlFor="res-email" className={labelClass}>
               {t("5. メール", "5. Email")}
-              <span className="ml-1 text-gold/40">*</span>
+              <span className="ml-1 text-gold">*</span>
             </label>
             <input
               id="res-email"
@@ -344,7 +344,7 @@ export default function ReservationForm() {
         <div className="flex flex-col gap-2">
           <label htmlFor="res-phone" className={labelClass}>
             {t("6. 電話番号", "6. Phone")}
-            <span className="ml-1 text-gold/40">*</span>
+            <span className="ml-1 text-gold">*</span>
           </label>
           <input
             id="res-phone"
@@ -446,7 +446,7 @@ export default function ReservationForm() {
 
       {/* Backup: direct messaging */}
       <div className="flex flex-col gap-3 border-t border-border/60 pt-5">
-        <p className="text-xs tracking-[0.2em] text-gold/70">
+        <p className="text-xs tracking-[0.2em] text-gold">
           {t("または直接メッセージ", "OR MESSAGE US DIRECTLY")}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">

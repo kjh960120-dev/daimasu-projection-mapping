@@ -39,11 +39,11 @@ export default function Footer() {
 
       <div className="mx-auto max-w-6xl px-6 py-10 lg:px-12 md:py-12">
         <div className="flex flex-col items-center gap-6 text-center">
-          <span className="font-[family-name:var(--font-cinzel)] text-xl font-medium tracking-[0.35em] text-gold/80">
+          <span className="font-[family-name:var(--font-cinzel)] text-xl font-medium tracking-[0.35em] text-gold">
             DAIMASU
           </span>
 
-          <p className="font-[family-name:var(--font-noto-serif)] text-sm tracking-[0.14em] text-gold/70">
+          <p className="font-[family-name:var(--font-noto-serif)] text-sm tracking-[0.14em] text-gold-soft">
             {t("お待ちしております。", "Master Owly awaits.")}
           </p>
 

@@ -225,7 +225,7 @@ export default function Header() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.75 }}
-                className="text-center font-[family-name:var(--font-noto-serif)] text-[10px] tracking-[0.2em] text-gold-dark/70"
+                className="text-center font-[family-name:var(--font-noto-serif)] text-[11px] tracking-[0.2em] text-gold-soft"
               >
                 {t("火〜日 · 17:30 / 19:30", "TUE–SUN · 17:30 / 19:30")}
               </motion.p>

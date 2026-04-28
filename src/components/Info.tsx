@@ -72,10 +72,10 @@ function LazyMap({
               <MapPin size={20} className="text-gold/70" aria-hidden="true" strokeWidth={1.5} />
             </div>
           </div>
-          <p className="text-[11px] tracking-[0.25em] text-text-muted uppercase">
+          <p className="text-[11px] tracking-[0.25em] text-text-secondary uppercase">
             Makati, Metro Manila
           </p>
-          <p className="text-[10px] tracking-[0.15em] text-text-muted/60">
+          <p className="text-[11px] tracking-[0.15em] text-text-muted">
             {placeholderLabel}
           </p>
         </div>
@@ -228,10 +228,10 @@ export default function Info() {
                   <Icon size={20} strokeWidth={1.5} />
                 </span>
                 <div>
-                  <p className="mb-1 text-xs tracking-[0.2em] text-gold/70">
+                  <p className="mb-1 text-xs tracking-[0.2em] text-gold">
                     {t(info.label.ja, info.label.en)}
                   </p>
-                  <p className="text-sm leading-relaxed text-text-secondary">
+                  <p className="text-sm leading-relaxed text-foreground">
                     {valueText}
                   </p>
                 </div>
@@ -261,13 +261,13 @@ export default function Info() {
           {/* Contact block */}
           <div className="flex flex-col justify-between gap-8 border border-border bg-surface/50 p-8">
             <div>
-              <p className="mb-4 text-xs tracking-[0.3em] text-gold/70">
+              <p className="mb-4 text-xs tracking-[0.3em] text-gold">
                 {t("お問い合わせ", "CONTACT")}
               </p>
-              <p className="mb-2 text-sm leading-loose text-text-secondary">
+              <p className="mb-2 text-sm leading-loose text-foreground">
                 {t(CONTACT.address.full.ja, CONTACT.address.full.en)}
               </p>
-              <p className="mb-6 inline-flex items-center gap-2 text-xs tracking-wide text-gold/60">
+              <p className="mb-6 inline-flex items-center gap-2 text-xs tracking-wide text-gold-soft">
                 <Clock size={12} strokeWidth={1.5} aria-hidden="true" />
                 {t(CONTACT.restaurantHours.ja, CONTACT.restaurantHours.en)}
               </p>
@@ -280,7 +280,7 @@ export default function Info() {
                   <Phone size={16} strokeWidth={1.5} className="text-gold/60 group-hover:text-gold" />
                   <span className="tracking-wide">
                     {CONTACT.phone.landline.label}
-                    <span className="ml-2 text-xs text-text-muted">({t("固定電話", "landline")})</span>
+                    <span className="ml-2 text-xs text-text-secondary">({t("固定電話", "landline")})</span>
                   </span>
                 </a>
                 <a
@@ -290,7 +290,7 @@ export default function Info() {
                   <Phone size={16} strokeWidth={1.5} className="text-gold/60 group-hover:text-gold" />
                   <span className="tracking-wide">
                     {CONTACT.phone.mobile.label}
-                    <span className="ml-2 text-xs text-text-muted">(Globe)</span>
+                    <span className="ml-2 text-xs text-text-secondary">(Globe)</span>
                   </span>
                 </a>
                 <a
@@ -312,11 +312,11 @@ export default function Info() {
                 </a>
               </div>
 
-              <div className="mt-6 flex items-start gap-3 border-t border-border pt-5 text-xs leading-relaxed text-text-muted">
+              <div className="mt-6 flex items-start gap-3 border-t border-border pt-5 text-xs leading-relaxed text-text-secondary">
                 <ShieldCheck
                   size={14}
                   strokeWidth={1.5}
-                  className="mt-0.5 flex-shrink-0 text-gold/50"
+                  className="mt-0.5 flex-shrink-0 text-gold/60"
                   aria-hidden="true"
                 />
                 <span className="tracking-wide">
@@ -353,7 +353,7 @@ export default function Info() {
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-8 text-center text-xs tracking-[0.3em] text-gold/70"
+            className="mb-8 text-center text-xs tracking-[0.3em] text-gold"
           >
             {t("よくあるご質問", "FREQUENTLY ASKED QUESTIONS")}
           </motion.p>

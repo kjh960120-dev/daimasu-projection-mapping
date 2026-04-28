@@ -53,7 +53,7 @@ export default function Experience() {
               className="group relative flex flex-col border border-border bg-surface/50 p-6 transition-all duration-500 hover:border-gold/40 hover:bg-card lg:p-8 xl:p-10 2xl:p-12"
             >
               <div className="mb-5 flex items-center justify-between gap-4">
-                <span className="font-[family-name:var(--font-cinzel)] text-5xl font-normal text-gold/30 transition-colors duration-500 group-hover:text-gold/60 xl:text-6xl">
+                <span className="font-[family-name:var(--font-cinzel)] text-5xl font-normal text-gold/45 transition-colors duration-500 group-hover:text-gold/75 xl:text-6xl">
                   {step.number}
                 </span>
                 {step.thumb && (

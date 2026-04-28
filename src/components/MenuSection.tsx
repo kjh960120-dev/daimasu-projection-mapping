@@ -141,8 +141,8 @@ export default function MenuSection() {
                         <span className="font-serif text-lg tracking-widest text-gold">
                           Course {sceneNum}
                         </span>
-                        <span className="text-[10px] text-gold/40">—</span>
-                        <span className="text-[10px] tracking-[0.15em] text-gold-soft">
+                        <span aria-hidden="true" className="text-xs text-gold/50">—</span>
+                        <span className="text-xs tracking-[0.15em] text-gold-soft">
                           {t(time.ja, time.en)}
                         </span>
                         <span
@@ -152,7 +152,7 @@ export default function MenuSection() {
                       </div>
                       <div className="mb-2 flex min-w-0 items-center gap-1.5">
                         <svg
-                          className="h-3 w-3 shrink-0 text-gold/50"
+                          className="h-3 w-3 shrink-0 text-gold/60"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -164,7 +164,7 @@ export default function MenuSection() {
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                           <circle cx="12" cy="10" r="3" />
                         </svg>
-                        <span className="min-w-0 text-xs tracking-wider break-words text-gold/70">
+                        <span className="min-w-0 text-xs tracking-wider break-words text-gold-soft">
                           {t(course.craft.ja, course.craft.en)}
                         </span>
                       </div>
@@ -198,7 +198,7 @@ export default function MenuSection() {
               />
             ))}
           </div>
-          <p className="mt-3 text-center text-[10px] tracking-[0.25em] text-text-muted">
+          <p className="mt-3 text-center text-[11px] tracking-[0.25em] text-text-secondary">
             {t("← スワイプで次のコース →", "← swipe for next course →")}
           </p>
         </div>
@@ -244,10 +244,10 @@ export default function MenuSection() {
                     <span className="font-serif text-lg tracking-widest text-gold sm:text-xl">
                       Course {sceneNum}
                     </span>
-                    <span className="text-[10px] tracking-[0.2em] uppercase opacity-80" style={{ color: "var(--gold)" }}>
+                    <span aria-hidden="true" className="text-xs tracking-[0.2em] uppercase text-gold/60">
                       —
                     </span>
-                    <span className="text-[10px] tracking-[0.15em] text-gold-soft">
+                    <span className="text-xs tracking-[0.15em] text-gold-soft">
                       {t(time.ja, time.en)}
                     </span>
                     <span
@@ -259,7 +259,7 @@ export default function MenuSection() {
                   {/* Location */}
                   <div className="mb-2 flex items-center gap-1.5">
                     <svg
-                      className="h-3 w-3 text-gold/50"
+                      className="h-3 w-3 text-gold/60"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -270,7 +270,7 @@ export default function MenuSection() {
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                       <circle cx="12" cy="10" r="3" />
                     </svg>
-                    <span className="text-xs tracking-wider text-gold/60">
+                    <span className="text-xs tracking-wider text-gold-soft">
                       {t(course.craft.ja, course.craft.en)}
                     </span>
                   </div>
@@ -322,8 +322,8 @@ export default function MenuSection() {
                   <span className="font-serif text-xl tracking-widest text-gold">
                     Course {sceneNum}
                   </span>
-                  <span className="text-[10px] text-gold/40">—</span>
-                  <span className="text-[10px] tracking-[0.15em] text-gold-soft">
+                  <span aria-hidden="true" className="text-xs text-gold/50">—</span>
+                  <span className="text-xs tracking-[0.15em] text-gold-soft">
                     {t(time.ja, time.en)}
                   </span>
                   <span
@@ -334,7 +334,7 @@ export default function MenuSection() {
 
                 <div className="mb-3 flex items-center gap-1.5">
                   <svg
-                    className="h-3 w-3 text-gold/50"
+                    className="h-3 w-3 text-gold/60"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -346,7 +346,7 @@ export default function MenuSection() {
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
-                  <span className="text-xs tracking-wider text-gold/60">
+                  <span className="text-xs tracking-wider text-gold-soft">
                     {t(course.craft.ja, course.craft.en)}
                   </span>
                 </div>
@@ -373,7 +373,7 @@ export default function MenuSection() {
           className="mt-10 text-center md:mt-12"
         >
           <div className="gold-line mx-auto mb-6 w-24" />
-          <p className="font-serif text-sm tracking-widest text-gold/80">
+          <p className="font-serif text-sm tracking-widest text-gold">
             {t(
               "全8コース、約90分の懐石劇場",
               "8 courses, approximately 90 minutes"
@@ -388,7 +388,7 @@ export default function MenuSection() {
           transition={{ duration: 0.8, delay: 1.2 }}
           className="mt-6 text-center"
         >
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-text-secondary">
             {t(
               "※ 季節やテーマにより内容が変更になる場合がございます",
               "* Courses may evolve with the season"
