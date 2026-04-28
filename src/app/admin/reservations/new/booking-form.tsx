@@ -220,27 +220,51 @@ export function ManualBookingForm({
             <NumPadInput
               value={String(partySize)}
               onChange={(s) => {
+                // Cap to online_seats (8); allow values that exceed
+                // seatRemaining so the operator sees the slot-full
+                // warning instead of being silently corrected.
                 const n = parseInt(s, 10) || 1;
-                const cap = Math.min(8, settings.online_seats);
+                const cap = Math.min(20, settings.online_seats);
                 setPartySize(Math.min(Math.max(1, n), cap));
               }}
               label={ti("人数を入力", "Enter party size")}
+              subText={
+                seatRemaining === 0
+                  ? ti(
+                      "この時間帯は満席です",
+                      "This slot is FULL"
+                    )
+                  : ti(
+                      `この時間帯の残り席: ${seatRemaining} 名分`,
+                      `Seats remaining: ${seatRemaining}`
+                    )
+              }
               suffix={ti("名", " pax")}
               maxIntegerDigits={1}
               placeholder="1"
             />
             {seatRemaining === 0 ? (
-              <span className="font-mono text-[12px] font-bold uppercase tracking-[0.10em] text-red-400">
-                {ti("この時間帯は満席です", "This slot is FULL")}
+              <span className="border border-red-500/60 bg-red-500/[0.10] px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.10em] text-red-400">
+                {ti(
+                  "満席です。別の日時を選んでください。",
+                  "FULL — pick another slot."
+                )}
+              </span>
+            ) : partySize > seatRemaining ? (
+              <span className="border border-red-500/60 bg-red-500/[0.10] px-3 py-1.5 text-[12px] font-medium text-red-400">
+                {ti(
+                  `${partySize}名は入りません。残り ${seatRemaining} 名分の枠しかありません。`,
+                  `${partySize} guests won't fit — only ${seatRemaining} seat${seatRemaining > 1 ? "s" : ""} left in this slot.`
+                )}
               </span>
             ) : seatRemaining <= 1 ? (
               <span className="text-[12px] font-medium text-amber-400">
-                {ti(`残り ${seatRemaining} 席のみ`, `Only ${seatRemaining} seat left`)}
+                {ti(`残り ${seatRemaining} 名分のみ`, `Only ${seatRemaining} seat left`)}
               </span>
             ) : (
               <span className="admin-meta normal-case tracking-normal">
                 {ti(
-                  `この時間帯の残り席: ${seatRemaining}`,
+                  `この時間帯の残り席: ${seatRemaining} 名分`,
                   `Seats remaining this slot: ${seatRemaining}`
                 )}
               </span>
@@ -478,7 +502,7 @@ export function ManualBookingForm({
           </p>
         )}
         {!dateClosed && seatRemaining === 0 && (
-          <p className="border border-red-500/60 bg-red-500/[0.10] px-3 py-2 text-[13px] font-bold uppercase tracking-[0.08em] text-red-400">
+          <p className="border border-red-500/60 bg-red-500/[0.10] px-4 py-3 text-[14px] font-bold uppercase tracking-[0.08em] text-red-400">
             {ti(
               "この時間帯は満席です。別の日時を選んでください。",
               "This slot is FULL. Please pick another date or seating."
@@ -486,12 +510,20 @@ export function ManualBookingForm({
           </p>
         )}
         {!dateClosed && seatRemaining > 0 && partySize > seatRemaining && (
-          <p className="border border-amber-500/60 bg-amber-500/[0.08] px-3 py-2 text-[13px] font-medium text-amber-400">
-            {ti(
-              `${partySize}名は入りません。残り席: ${seatRemaining}`,
-              `${partySize} guests won't fit. Only ${seatRemaining} seat${seatRemaining > 1 ? "s" : ""} left.`
-            )}
-          </p>
+          <div className="border border-red-500/60 bg-red-500/[0.10] px-4 py-3">
+            <p className="text-[14px] font-bold text-red-400">
+              {ti(
+                `${partySize}名は入りません`,
+                `${partySize} guests won't fit`
+              )}
+            </p>
+            <p className="mt-1 text-[13px] text-red-400/90">
+              {ti(
+                `この時間帯は残り ${seatRemaining} 名分の枠しかありません。人数を ${seatRemaining}名以下に減らすか、別の日時を選んでください。`,
+                `This slot has only ${seatRemaining} seat${seatRemaining > 1 ? "s" : ""} left. Reduce party to ${seatRemaining} or pick another slot.`
+              )}
+            </p>
+          </div>
         )}
 
         <button
