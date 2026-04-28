@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
-import { Cinzel, Cormorant_Garamond, Noto_Sans_JP, Noto_Serif_JP, Shippori_Mincho } from "next/font/google";
+import { Cinzel, Cormorant_Garamond, Inter, Noto_Sans_JP, Noto_Serif_JP, Shippori_Mincho } from "next/font/google";
 import "./globals.css";
+
+// Inter: SaaS-standard for /admin (Linear / Stripe / Vercel / GitHub).
+// Latin only — Japanese falls back to Noto Sans JP via the admin font stack.
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter",
+  display: "swap",
+  preload: false,
+});
 
 // Cinzel: primary Latin display (logo, numerals, eyebrow). Per TOP design spec.
 const cinzel = Cinzel({
@@ -135,7 +145,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${cinzel.variable} ${notoSerifJP.variable} ${notoSansJP.variable} ${cormorant.variable} ${shipporiMincho.variable}`}>
+    <html lang="ja" className={`${cinzel.variable} ${notoSerifJP.variable} ${notoSansJP.variable} ${inter.variable} ${cormorant.variable} ${shipporiMincho.variable}`}>
       <head>
         <meta name="theme-color" content="#0a0a0a" />
         <script
