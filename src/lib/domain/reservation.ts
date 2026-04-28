@@ -79,12 +79,15 @@ export function statusAfterCancel(tier: RefundTier): ReservationStatus {
   }
 }
 
-/** Centavos -> "₱8,000" style display. */
+/** Centavos -> "₱8,000" style display.
+ *  Uses narrowSymbol so the ₱ glyph renders even when the user is in JA locale
+ *  (otherwise ja-JP defaults to "PHP" prefix). The business is PH-only. */
 export function formatPHP(centavos: number, locale: "ja" | "en" = "en"): string {
   const peso = centavos / 100;
   return peso.toLocaleString(locale === "ja" ? "ja-JP" : "en-PH", {
     style: "currency",
     currency: "PHP",
+    currencyDisplay: "narrowSymbol",
     maximumFractionDigits: 0,
   });
 }

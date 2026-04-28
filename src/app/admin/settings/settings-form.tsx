@@ -4,7 +4,16 @@ import { useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import type { RestaurantSettings } from "@/lib/db/types";
 
-export function SettingsForm({ settings }: { settings: RestaurantSettings }) {
+type Lang = "ja" | "en";
+const ti = (lang: Lang, ja: string, en: string) => (lang === "ja" ? ja : en);
+
+export function SettingsForm({
+  settings,
+  lang,
+}: {
+  settings: RestaurantSettings;
+  lang: Lang;
+}) {
   const [s, setS] = useState(settings);
   const [status, setStatus] = useState<"idle" | "pending" | "ok" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -41,30 +50,30 @@ export function SettingsForm({ settings }: { settings: RestaurantSettings }) {
   }
 
   return (
-    <form onSubmit={save} className="grid gap-8 lg:grid-cols-2">
-      <Section title="Reservations">
+    <form onSubmit={save} className="grid gap-6 lg:grid-cols-2">
+      <Section title={ti(lang, "予約", "Reservations")}>
         <Toggle
-          label="Reservations open (public form)"
+          label={ti(lang, "予約受付中 (公開フォーム)", "Reservations open (public form)")}
           checked={s.reservations_open}
           onChange={(v) => update("reservations_open", v)}
         />
         <NumberField
-          label="Total seats"
+          label={ti(lang, "総席数", "Total seats")}
           value={s.total_seats}
           onChange={(v) => update("total_seats", v)}
           min={1}
           max={20}
         />
         <NumberField
-          label="Online-bookable seats"
+          label={ti(lang, "オンライン予約可能席数", "Online-bookable seats")}
           value={s.online_seats}
           onChange={(v) => update("online_seats", v)}
           min={0}
           max={s.total_seats}
-          help="Walk-in budget = total − online."
+          help={ti(lang, "ウォークイン枠 = 総席数 − オンライン枠", "Walk-in budget = total − online.")}
         />
         <NumberField
-          label="Service minutes"
+          label={ti(lang, "1部の所要時間 (分)", "Service minutes")}
           value={s.service_minutes}
           onChange={(v) => update("service_minutes", v)}
           min={30}
@@ -72,58 +81,56 @@ export function SettingsForm({ settings }: { settings: RestaurantSettings }) {
         />
       </Section>
 
-      <Section title="Pricing & deposit">
+      <Section title={ti(lang, "料金とデポジット", "Pricing & deposit")}>
         <NumberField
-          label="Course price (₱)"
+          label={ti(lang, "コース料金 (₱)", "Course price (₱)")}
           value={Math.floor(s.course_price_centavos / 100)}
           onChange={(v) => update("course_price_centavos", v * 100)}
           min={0}
         />
         <NumberField
-          label="Deposit %"
+          label={ti(lang, "デポジット率 (%)", "Deposit %")}
           value={s.deposit_pct}
           onChange={(v) => update("deposit_pct", v)}
           min={0}
           max={100}
         />
         <NumberField
-          label="Monthly revenue target (₱)"
+          label={ti(lang, "月次売上目標 (₱)", "Monthly revenue target (₱)")}
           value={Math.floor(s.monthly_revenue_target_centavos / 100)}
-          onChange={(v) =>
-            update("monthly_revenue_target_centavos", v * 100)
-          }
+          onChange={(v) => update("monthly_revenue_target_centavos", v * 100)}
           min={0}
         />
       </Section>
 
-      <Section title="Cancellation policy">
+      <Section title={ti(lang, "キャンセルポリシー", "Cancellation policy")}>
         <NumberField
-          label="100% refund cutoff (hours)"
+          label={ti(lang, "100%返金の境界 (時間前)", "100% refund cutoff (hours)")}
           value={s.refund_full_hours}
           onChange={(v) => update("refund_full_hours", v)}
           min={0}
           max={168}
         />
         <NumberField
-          label="50% refund cutoff (hours)"
+          label={ti(lang, "50%返金の境界 (時間前)", "50% refund cutoff (hours)")}
           value={s.refund_partial_hours}
           onChange={(v) => update("refund_partial_hours", v)}
           min={0}
           max={s.refund_full_hours}
-          help="Below this: 0% refund."
+          help={ti(lang, "これ以降は返金なし", "Below this: 0% refund.")}
         />
       </Section>
 
-      <Section title="Reminders">
+      <Section title={ti(lang, "リマインダー", "Reminders")}>
         <NumberField
-          label="Long reminder (hours before)"
+          label={ti(lang, "ロングリマインダー (時間前)", "Long reminder (hours before)")}
           value={s.reminder_long_hours}
           onChange={(v) => update("reminder_long_hours", v)}
           min={1}
           max={72}
         />
         <NumberField
-          label="Short reminder (hours before)"
+          label={ti(lang, "ショートリマインダー (時間前)", "Short reminder (hours before)")}
           value={s.reminder_short_hours}
           onChange={(v) => update("reminder_short_hours", v)}
           min={0}
@@ -131,63 +138,67 @@ export function SettingsForm({ settings }: { settings: RestaurantSettings }) {
         />
       </Section>
 
-      <Section title="Notification channels">
+      <Section title={ti(lang, "通知チャネル", "Notification channels")}>
         <TextField
-          label="Telegram bot token"
+          label={ti(lang, "Telegram Bot トークン", "Telegram bot token")}
           value={s.telegram_bot_token ?? ""}
           onChange={(v) => update("telegram_bot_token", v || null)}
-          help="From @BotFather. Leave blank to disable Telegram alerts."
+          help={ti(
+            lang,
+            "@BotFather から取得。空欄で Telegram 通知を無効化。",
+            "From @BotFather. Leave blank to disable Telegram alerts."
+          )}
         />
         <TextField
-          label="Telegram chat ID"
+          label={ti(lang, "Telegram チャットID", "Telegram chat ID")}
           value={s.telegram_chat_id ?? ""}
           onChange={(v) => update("telegram_chat_id", v || null)}
         />
         <TextField
-          label="WhatsApp 'from' number (Twilio)"
+          label={ti(lang, "WhatsApp 送信元番号 (Twilio)", "WhatsApp 'from' number (Twilio)")}
           value={s.whatsapp_from_number ?? ""}
           onChange={(v) => update("whatsapp_from_number", v || null)}
-          help="e.g. whatsapp:+14155238886"
+          help={ti(lang, "例: whatsapp:+14155238886", "e.g. whatsapp:+14155238886")}
         />
         <TextField
-          label="Resend 'from' email"
+          label={ti(lang, "Resend 送信元メール", "Resend 'from' email")}
           value={s.resend_from_email ?? ""}
           onChange={(v) => update("resend_from_email", v || null)}
         />
       </Section>
 
-      <Section title="Display">
+      <Section title={ti(lang, "表示", "Display")}>
         <TextField
-          label="Display name"
+          label={ti(lang, "表示名", "Display name")}
           value={s.display_name}
           onChange={(v) => update("display_name", v)}
         />
         <TextField
-          label="Timezone (IANA)"
+          label={ti(lang, "タイムゾーン (IANA)", "Timezone (IANA)")}
           value={s.timezone}
           onChange={(v) => update("timezone", v)}
-          help="Default: Asia/Manila"
+          help={ti(lang, "デフォルト: Asia/Manila", "Default: Asia/Manila")}
         />
       </Section>
 
-      <div className="lg:col-span-2 flex items-center gap-4 border-t border-border pt-6">
+      <div className="lg:col-span-2 flex items-center gap-4 border-t border-border pt-5">
         <button
           type="submit"
           disabled={status === "pending"}
-          className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium tracking-[0.14em] disabled:opacity-60"
+          className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium tracking-[0.14em] disabled:opacity-60"
         >
           {status === "pending" ? (
             <>
               <Loader2 className="animate-spin" size={16} />
-              Saving...
+              {ti(lang, "保存中...", "Saving...")}
             </>
           ) : status === "ok" ? (
             <>
               <CheckCircle2 size={16} />
-              Saved
+              {ti(lang, "保存しました", "Saved")}
             </>
           ) : (
-            "Save settings"
+            ti(lang, "設定を保存", "Save settings")
           )}
         </button>
         {status === "error" && <p className="text-xs text-red-400">{errorMsg}</p>}
