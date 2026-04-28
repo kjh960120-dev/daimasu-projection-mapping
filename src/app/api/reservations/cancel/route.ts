@@ -208,12 +208,14 @@ export async function POST(req: NextRequest) {
       subject,
       html,
       idempotencyKey: `email:cancel:${flipped.id}:${tier}`,
+      log: { reservation_id: flipped.id, kind: "cancel_confirm" },
     });
 
     await notifyTelegram({
       text: renderTelegramCancelled(flipped, refundCentavos, tier),
       tokenOverride: settings.telegram_bot_token,
       chatIdOverride: settings.telegram_chat_id,
+      log: { reservation_id: flipped.id, kind: "admin_alert" },
     });
   }
 

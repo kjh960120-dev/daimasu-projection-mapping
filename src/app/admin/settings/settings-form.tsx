@@ -1,11 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import type { RestaurantSettings } from "@/lib/db/types";
 
 type Lang = "ja" | "en";
 const ti = (lang: Lang, ja: string, en: string) => (lang === "ja" ? ja : en);
+
+const DANGER_FIELDS = [
+  "course_price_centavos",
+  "deposit_pct",
+  "refund_full_hours",
+  "refund_partial_hours",
+  "total_seats",
+  "online_seats",
+] as const;
+
+type DangerField = (typeof DANGER_FIELDS)[number];
 
 export function SettingsForm({
   settings,
@@ -15,8 +26,16 @@ export function SettingsForm({
   lang: Lang;
 }) {
   const [s, setS] = useState(settings);
-  const [status, setStatus] = useState<"idle" | "pending" | "ok" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "pending" | "ok" | "error" | "confirm">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const dangerDiffs = useMemo(() => {
+    return DANGER_FIELDS.filter((k) => s[k] !== settings[k]).map((k) => ({
+      key: k as DangerField,
+      before: settings[k] as number | boolean,
+      after: s[k] as number | boolean,
+    }));
+  }, [s, settings]);
 
   function update<K extends keyof RestaurantSettings>(
     key: K,
@@ -26,8 +45,16 @@ export function SettingsForm({
     setStatus("idle");
   }
 
-  async function save(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (dangerDiffs.length > 0 && status !== "confirm") {
+      setStatus("confirm");
+      return;
+    }
+    actuallySave();
+  }
+
+  async function actuallySave() {
     setStatus("pending");
     setErrorMsg(null);
     try {
@@ -50,7 +77,7 @@ export function SettingsForm({
   }
 
   return (
-    <form onSubmit={save} className="grid gap-6 lg:grid-cols-2">
+    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-2">
       <Section title={ti(lang, "予約", "Reservations")}>
         <Toggle
           label={ti(lang, "予約受付中 (公開フォーム)", "Reservations open (public form)")}
@@ -181,30 +208,86 @@ export function SettingsForm({
         />
       </Section>
 
-      <div className="lg:col-span-2 flex items-center gap-4 border-t border-border pt-5">
-        <button
-          type="submit"
-          disabled={status === "pending"}
-          className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium tracking-[0.14em] disabled:opacity-60"
-        >
-          {status === "pending" ? (
-            <>
-              <Loader2 className="animate-spin" size={16} />
-              {ti(lang, "保存中...", "Saving...")}
-            </>
-          ) : status === "ok" ? (
-            <>
-              <CheckCircle2 size={16} />
-              {ti(lang, "保存しました", "Saved")}
-            </>
-          ) : (
-            ti(lang, "設定を保存", "Save settings")
+      <div className="lg:col-span-2 border-t border-border pt-5">
+        {status === "confirm" && dangerDiffs.length > 0 && (
+          <div className="mb-4 border border-red-500/40 bg-red-500/[0.06] p-4">
+            <div className="mb-2 flex items-center gap-2 text-[12px] uppercase tracking-[0.16em] text-red-400">
+              <AlertTriangle size={14} />
+              {ti(lang, "重要な値を変更しています", "You're changing critical values")}
+            </div>
+            <ul className="mb-3 grid gap-1 text-[12px]">
+              {dangerDiffs.map((d) => (
+                <li key={d.key} className="grid grid-cols-[200px_1fr] gap-3 font-mono">
+                  <span className="text-text-muted">{dangerLabel(d.key, lang)}</span>
+                  <span>
+                    <span className="text-red-400/80">{String(d.before)}</span>
+                    <span className="mx-2 text-text-muted">→</span>
+                    <span className="text-foreground">{String(d.after)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mb-3 text-[11px] text-text-muted">
+              {ti(
+                lang,
+                "コース価格・デポジット率・キャンセル境界・席数の変更は、今後の予約に即座に影響します。意図した変更ですか?",
+                "Course price, deposit %, cancellation cutoffs, and seat counts affect every future booking immediately. Are you sure?"
+              )}
+            </p>
+          </div>
+        )}
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={status === "pending"}
+            className={
+              status === "confirm"
+                ? "inline-flex items-center justify-center gap-2 border border-red-500/60 bg-red-500/15 px-6 py-2.5 text-sm font-medium tracking-[0.14em] text-red-300 hover:bg-red-500/25 disabled:opacity-60"
+                : "btn-gold-ornate inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium tracking-[0.14em] disabled:opacity-60"
+            }
+          >
+            {status === "pending" ? (
+              <>
+                <Loader2 className="animate-spin" size={16} />
+                {ti(lang, "保存中...", "Saving...")}
+              </>
+            ) : status === "ok" ? (
+              <>
+                <CheckCircle2 size={16} />
+                {ti(lang, "保存しました", "Saved")}
+              </>
+            ) : status === "confirm" ? (
+              ti(lang, "確認: 保存する", "Confirm: save changes")
+            ) : (
+              ti(lang, "設定を保存", "Save settings")
+            )}
+          </button>
+          {status === "confirm" && (
+            <button
+              type="button"
+              onClick={() => setStatus("idle")}
+              className="text-[12px] uppercase tracking-[0.14em] text-text-muted hover:text-foreground"
+            >
+              {ti(lang, "やめる", "Cancel")}
+            </button>
           )}
-        </button>
-        {status === "error" && <p className="text-xs text-red-400">{errorMsg}</p>}
+          {status === "error" && <p className="text-xs text-red-400">{errorMsg}</p>}
+        </div>
       </div>
     </form>
   );
+}
+
+function dangerLabel(key: DangerField, lang: Lang): string {
+  const map: Record<DangerField, { ja: string; en: string }> = {
+    course_price_centavos: { ja: "コース料金 (centavos)", en: "Course price (centavos)" },
+    deposit_pct: { ja: "デポジット率 (%)", en: "Deposit %" },
+    refund_full_hours: { ja: "100%返金境界 (時間)", en: "100% refund cutoff (h)" },
+    refund_partial_hours: { ja: "50%返金境界 (時間)", en: "50% refund cutoff (h)" },
+    total_seats: { ja: "総席数", en: "Total seats" },
+    online_seats: { ja: "オンライン枠", en: "Online seats" },
+  };
+  return map[key][lang];
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

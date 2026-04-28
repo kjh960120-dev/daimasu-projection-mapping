@@ -1,0 +1,347 @@
+/**
+ * /admin/today — Service Sheet.
+ *
+ * One screen designed for print + tablet at the counter:
+ *  - Header: today's date, total covers, S1+S2 timing
+ *  - Per-seating block: every booking with time, guest, pax, notes, lang flag,
+ *    repeat-customer indicator, and a checkbox column for "arrived".
+ *
+ * Print-optimized via @media print rules in globals.css (already supports
+ * `.print-area` background neutralization).
+ */
+import Link from "next/link";
+import { requireAdminOrRedirect } from "@/lib/auth/admin";
+import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
+import { adminClient } from "@/lib/db/clients";
+import type { Reservation, RestaurantSettings } from "@/lib/db/types";
+import { mockSettings, mockReservations } from "../preview-mode";
+import { PrintButton } from "./print-button";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
+
+export default async function TodayServiceSheetPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const lang = await getAdminLang();
+  const sp = await searchParams;
+  const date = sp.date ?? todayIsoDate();
+
+  let settings: RestaurantSettings | null;
+  let bookings: Reservation[] = [];
+  const repeatMap: Map<string, number> = new Map();
+
+  if (PREVIEW_MODE) {
+    settings = mockSettings;
+    bookings = mockReservations.filter(
+      (r) => r.service_date === date && r.status !== "cancelled_full" && r.status !== "cancelled_partial" && r.status !== "cancelled_late" && r.status !== "expired"
+    );
+    for (const b of bookings) {
+      const key = b.guest_phone || b.guest_email;
+      const prior = mockReservations.filter(
+        (r) =>
+          r.id !== b.id &&
+          r.status === "completed" &&
+          (r.guest_phone === b.guest_phone || r.guest_email === b.guest_email)
+      ).length;
+      repeatMap.set(key, prior);
+    }
+  } else {
+    await requireAdminOrRedirect();
+    const sb = adminClient();
+    const [{ data: settingsRow }, { data: rRows }] = await Promise.all([
+      sb
+        .from("restaurant_settings")
+        .select("*")
+        .eq("id", 1)
+        .single<RestaurantSettings>(),
+      sb
+        .from("reservations")
+        .select("*")
+        .eq("service_date", date)
+        .in("status", ["confirmed", "completed", "no_show"])
+        .order("service_starts_at", { ascending: true })
+        .returns<Reservation[]>(),
+    ]);
+    settings = settingsRow;
+    bookings = rRows ?? [];
+
+    if (bookings.length > 0) {
+      const phones = Array.from(
+        new Set(bookings.map((b) => b.guest_phone).filter(Boolean))
+      );
+      const emails = Array.from(
+        new Set(
+          bookings
+            .map((b) => b.guest_email)
+            .filter((e) => e && !e.endsWith("@daimasu.local"))
+        )
+      );
+      // Two `.in(...)` calls instead of `.or()` so values with commas don't
+      // corrupt the parsed filter.
+      const [byPhone, byEmail] = await Promise.all([
+        phones.length > 0
+          ? sb
+              .from("reservations")
+              .select("guest_phone,guest_email")
+              .eq("status", "completed")
+              .lt("service_date", date)
+              .in("guest_phone", phones)
+              .returns<Pick<Reservation, "guest_phone" | "guest_email">[]>()
+          : Promise.resolve({ data: [] }),
+        emails.length > 0
+          ? sb
+              .from("reservations")
+              .select("guest_phone,guest_email")
+              .eq("status", "completed")
+              .lt("service_date", date)
+              .in("guest_email", emails)
+              .returns<Pick<Reservation, "guest_phone" | "guest_email">[]>()
+          : Promise.resolve({ data: [] }),
+      ]);
+      const priorRows = [...(byPhone.data ?? []), ...(byEmail.data ?? [])];
+      for (const b of bookings) {
+        const count = priorRows.filter(
+          (p) => p.guest_phone === b.guest_phone || p.guest_email === b.guest_email
+        ).length;
+        repeatMap.set(b.guest_phone || b.guest_email, count);
+      }
+    }
+  }
+
+  if (!settings) {
+    return (
+      <div className="px-6 py-6">
+        <p className="text-sm text-red-400">
+          {ti(lang, "設定行が見つかりません。", "Settings row missing.")}
+        </p>
+      </div>
+    );
+  }
+
+  const s1 = bookings.filter((b) => b.seating === "s1");
+  const s2 = bookings.filter((b) => b.seating === "s2");
+  const totalCovers = bookings.reduce((s, b) => s + b.party_size, 0);
+
+  const dateObj = new Date(`${date}T00:00:00+08:00`);
+  const dateLabel = dateObj.toLocaleDateString(
+    lang === "ja" ? "ja-JP" : "en-PH",
+    {
+      timeZone: "Asia/Manila",
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }
+  );
+
+  return (
+    <div className="px-4 py-6 sm:px-6 lg:px-8 print:px-0 print:py-0">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <h1 className="font-[family-name:var(--font-noto-serif)] text-xl tracking-[0.04em] text-foreground">
+          {ti(lang, "本日のサービス表", "Today's service sheet")}
+        </h1>
+        <div className="flex items-center gap-2">
+          <DateNavLinks date={date} lang={lang} />
+          <PrintButton lang={lang} />
+        </div>
+      </div>
+
+      <article className="border border-border bg-surface/40 p-6 print:border-0 print:bg-white print:p-0 print:text-black">
+        <header className="mb-6 flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-4 print:border-black/30">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-gold/70 print:text-black/60">
+              DAIMASU 大桝 BAR · {ti(lang, "サービス表", "Service sheet")}
+            </p>
+            <h2 className="mt-1 font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.04em] print:text-3xl">
+              {dateLabel}
+            </h2>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-text-muted print:text-black/60">
+              {ti(lang, "本日合計", "Total today")}
+            </p>
+            <p className="font-mono text-2xl">
+              {bookings.length}{" "}
+              <span className="text-base text-text-muted print:text-black/50">
+                /
+              </span>{" "}
+              {totalCovers}
+              <span className="ml-2 text-sm text-text-muted print:text-black/50">
+                {ti(lang, "(予約数 / 人数)", "(bkgs / pax)")}
+              </span>
+            </p>
+          </div>
+        </header>
+
+        <SeatingBlock
+          title={`${settings.seating_1_label} · ${ti(lang, "1部", "Seating 1")}`}
+          bookings={s1}
+          repeatMap={repeatMap}
+          lang={lang}
+        />
+        <SeatingBlock
+          title={`${settings.seating_2_label} · ${ti(lang, "2部", "Seating 2")}`}
+          bookings={s2}
+          repeatMap={repeatMap}
+          lang={lang}
+          className="mt-8"
+        />
+
+        <footer className="mt-8 border-t border-border pt-3 text-[10px] text-text-muted print:border-black/30 print:text-black/50">
+          {ti(
+            lang,
+            `生成: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Manila" })} · 凡例: ★=リピーター(N回目以降) · ●=備考あり`,
+            `Generated: ${new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila" })} · Legend: ★=repeat customer · ●=has notes`
+          )}
+        </footer>
+      </article>
+    </div>
+  );
+}
+
+function SeatingBlock({
+  title,
+  bookings,
+  repeatMap,
+  lang,
+  className,
+}: {
+  title: string;
+  bookings: Reservation[];
+  repeatMap: Map<string, number>;
+  lang: AdminLang;
+  className?: string;
+}) {
+  return (
+    <section className={className}>
+      <h3 className="mb-3 text-[12px] uppercase tracking-[0.2em] text-gold/80 print:text-black">
+        {title} · {bookings.length}件 ·{" "}
+        {bookings.reduce((s, b) => s + b.party_size, 0)}名
+      </h3>
+      {bookings.length === 0 ? (
+        <p className="border border-dashed border-border/60 px-3 py-4 text-center text-[12px] text-text-muted print:border-black/30 print:text-black/50">
+          {ti(lang, "予約なし", "No bookings")}
+        </p>
+      ) : (
+        <table className="w-full border-collapse text-[13px]">
+          <thead>
+            <tr className="border-y border-border text-[10px] uppercase tracking-[0.14em] text-text-muted print:border-black/40 print:text-black/60">
+              <th className="px-2 py-2 text-left">#</th>
+              <th className="px-2 py-2 text-left">{ti(lang, "時間", "Time")}</th>
+              <th className="px-2 py-2 text-left">{ti(lang, "お客様", "Guest")}</th>
+              <th className="px-2 py-2 text-right">{ti(lang, "人数", "Pax")}</th>
+              <th className="px-2 py-2 text-left">{ti(lang, "言語", "Lang")}</th>
+              <th className="px-2 py-2 text-left">{ti(lang, "備考", "Notes")}</th>
+              <th className="w-8 px-2 py-2 text-center print:table-cell">✓</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.map((b, i) => {
+              const repeats = repeatMap.get(b.guest_phone || b.guest_email) ?? 0;
+              return (
+                <tr
+                  key={b.id}
+                  className="border-b border-border/60 align-top print:border-black/20"
+                >
+                  <td className="px-2 py-3 font-mono text-[11px] text-text-muted print:text-black/60">
+                    {i + 1}
+                  </td>
+                  <td className="px-2 py-3 font-mono text-[12px]">
+                    {new Date(b.service_starts_at).toLocaleTimeString(
+                      lang === "ja" ? "ja-JP" : "en-PH",
+                      {
+                        timeZone: "Asia/Manila",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
+                  </td>
+                  <td className="px-2 py-3">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      {repeats > 0 && (
+                        <span
+                          className="text-[11px] text-gold/90 print:text-black"
+                          title={ti(
+                            lang,
+                            `${repeats + 1}回目のご来店`,
+                            `${repeats + 1} prior visit${repeats > 0 ? "s" : ""}`
+                          )}
+                        >
+                          ★{repeats + 1}
+                        </span>
+                      )}
+                      <span>{b.guest_name}</span>
+                    </div>
+                    <div className="text-[10px] text-text-muted print:text-black/50">
+                      {b.guest_phone}
+                    </div>
+                  </td>
+                  <td className="px-2 py-3 text-right font-mono">{b.party_size}</td>
+                  <td className="px-2 py-3 text-[10px] uppercase">
+                    {b.guest_lang}
+                  </td>
+                  <td className="px-2 py-3 text-[12px] leading-snug">
+                    {b.notes ? (
+                      <span className="flex items-start gap-1.5">
+                        <span className="text-gold/80 print:text-black">●</span>
+                        <span className="whitespace-pre-line">{b.notes}</span>
+                      </span>
+                    ) : (
+                      <span className="text-text-muted print:text-black/40">—</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-3 text-center">
+                    <span className="inline-block h-4 w-4 border border-border/60 print:border-black/40" />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
+function DateNavLinks({ date, lang }: { date: string; lang: AdminLang }) {
+  const prev = shiftIsoDate(date, -1);
+  const next = shiftIsoDate(date, 1);
+  const today = todayIsoDate();
+  return (
+    <div className="flex items-center gap-1 text-[11px] uppercase tracking-[0.14em]">
+      <Link
+        href={`/admin/today?date=${prev}`}
+        className="border border-border px-2 py-1.5 hover:border-gold/40 hover:text-gold"
+      >
+        ←
+      </Link>
+      <Link
+        href={`/admin/today?date=${today}`}
+        className="border border-border px-2 py-1.5 hover:border-gold/40 hover:text-gold"
+      >
+        {ti(lang, "本日", "Today")}
+      </Link>
+      <Link
+        href={`/admin/today?date=${next}`}
+        className="border border-border px-2 py-1.5 hover:border-gold/40 hover:text-gold"
+      >
+        →
+      </Link>
+    </div>
+  );
+}
+
+function todayIsoDate(): string {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+  return d.toISOString().slice(0, 10);
+}
+function shiftIsoDate(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00+08:00`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}

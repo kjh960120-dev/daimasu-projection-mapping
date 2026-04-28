@@ -4,15 +4,27 @@ import { useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import type { Reservation, PaymentMethod } from "@/lib/db/types";
 import { formatPHP } from "@/lib/domain/reservation";
+import type { AdminLang } from "@/lib/auth/admin-lang";
 
-const METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "cash", label: "Cash" },
-  { value: "card", label: "Card" },
-  { value: "gcash", label: "GCash" },
-  { value: "deposit_only", label: "Deposit only (no balance)" },
+const METHODS: {
+  value: PaymentMethod;
+  ja: string;
+  en: string;
+}[] = [
+  { value: "cash", ja: "現金", en: "Cash" },
+  { value: "card", ja: "カード", en: "Card" },
+  { value: "gcash", ja: "GCash", en: "GCash" },
+  { value: "deposit_only", ja: "デポジットのみ (残金なし)", en: "Deposit only (no balance)" },
 ];
 
-export function SettleForm({ reservation }: { reservation: Reservation }) {
+export function SettleForm({
+  reservation,
+  lang,
+}: {
+  reservation: Reservation;
+  lang: AdminLang;
+}) {
+  const ti = (ja: string, en: string) => (lang === "ja" ? ja : en);
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [amountPesos, setAmountPesos] = useState(
     String(reservation.balance_centavos / 100)
@@ -50,14 +62,15 @@ export function SettleForm({ reservation }: { reservation: Reservation }) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <p className="text-xs uppercase tracking-[0.18em] text-gold/70">
-        Mark as settled
+        {ti("精算する", "Mark as settled")}
       </p>
       <p className="text-sm text-text-secondary">
-        Balance owed: {formatPHP(reservation.balance_centavos)}
+        {ti("残金: ", "Balance owed: ")}
+        {formatPHP(reservation.balance_centavos, lang)}
       </p>
 
       <label className="flex flex-col gap-1.5 text-xs uppercase tracking-[0.14em] text-text-muted">
-        Payment method
+        {ti("支払方法", "Payment method")}
         <select
           value={method}
           onChange={(e) => setMethod(e.target.value as PaymentMethod)}
@@ -65,14 +78,14 @@ export function SettleForm({ reservation }: { reservation: Reservation }) {
         >
           {METHODS.map((m) => (
             <option key={m.value} value={m.value}>
-              {m.label}
+              {ti(m.ja, m.en)}
             </option>
           ))}
         </select>
       </label>
 
       <label className="flex flex-col gap-1.5 text-xs uppercase tracking-[0.14em] text-text-muted">
-        Total received (₱)
+        {ti("受領合計 (₱)", "Total received (₱)")}
         <input
           type="number"
           min="0"
@@ -83,7 +96,10 @@ export function SettleForm({ reservation }: { reservation: Reservation }) {
           className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
         />
         <span className="text-[10px] text-text-muted">
-          Drinks / upsell beyond the course can be added here.
+          {ti(
+            "ドリンク等のアップセルもここで合計可能。",
+            "Drinks / upsell beyond the course can be added here."
+          )}
         </span>
       </label>
 
@@ -95,15 +111,15 @@ export function SettleForm({ reservation }: { reservation: Reservation }) {
         {status === "pending" ? (
           <>
             <Loader2 className="animate-spin" size={14} aria-hidden="true" />
-            Saving...
+            {ti("保存中...", "Saving...")}
           </>
         ) : status === "ok" ? (
           <>
             <CheckCircle2 size={14} aria-hidden="true" />
-            Settled
+            {ti("精算完了", "Settled")}
           </>
         ) : (
-          "Mark as settled"
+          ti("精算する", "Mark as settled")
         )}
       </button>
 

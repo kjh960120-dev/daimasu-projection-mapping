@@ -91,11 +91,13 @@ export async function POST(req: NextRequest) {
         hoursOut: hours,
         cancelUrl,
       });
+      const reminderKind = win === "long" ? "reminder_long" : "reminder_short";
       await sendEmail({
         to: r.guest_email,
         subject,
         html,
         idempotencyKey: `email:reminder:${win}:${r.id}`,
+        log: { reservation_id: r.id, kind: reminderKind },
       });
 
       // Best-effort WhatsApp.
@@ -108,6 +110,7 @@ export async function POST(req: NextRequest) {
           toPhoneE164: r.guest_phone.replace(/\s/g, ""),
           body,
           fromWhatsApp: settings.whatsapp_from_number,
+          log: { reservation_id: r.id, kind: reminderKind },
         });
       }
 

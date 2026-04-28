@@ -133,3 +133,32 @@ export interface RevenueMonthly {
   no_show_count: number;
   cancel_count: number;
 }
+
+export type NotificationChannel = "telegram" | "email" | "whatsapp" | "sms";
+
+export type NotificationKind =
+  | "admin_alert"
+  | "guest_confirm"
+  | "reminder_long"
+  | "reminder_short"
+  | "cancel_confirm"
+  | "no_show_alert";
+
+export type NotificationStatus = "sent" | "failed" | "skipped";
+
+export interface NotificationLog {
+  id: number;
+  reservation_id: string | null;
+  channel: NotificationChannel;
+  kind: NotificationKind;
+  status: NotificationStatus;
+  recipient: string | null;
+  error_message: string | null;
+  attempted_at: string;
+}
+
+export interface ClosedDate {
+  closed_date: string;
+  reason: string | null;
+  created_at: string;
+}

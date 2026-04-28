@@ -226,11 +226,13 @@ async function sendConfirmAndPing(reservation: Reservation, sb: SbClient) {
     subject,
     html,
     idempotencyKey: `email:confirm:${reservation.id}`,
+    log: { reservation_id: reservation.id, kind: "guest_confirm" },
   });
 
   await notifyTelegram({
     text: renderTelegramConfirm(reservation),
     tokenOverride: settings.telegram_bot_token,
     chatIdOverride: settings.telegram_chat_id,
+    log: { reservation_id: reservation.id, kind: "admin_alert" },
   });
 }

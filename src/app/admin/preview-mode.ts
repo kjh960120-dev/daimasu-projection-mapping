@@ -13,6 +13,7 @@ import type {
   RevenueDaily,
   RevenueMonthly,
   Payment,
+  NotificationLog,
 } from "@/lib/db/types";
 
 export const PREVIEW_FLAG = "preview";
@@ -299,3 +300,26 @@ export const mockAdmin = {
   email: "owner@daimasu.com.ph",
   display_name: "DAIMASU Owner",
 };
+
+export const mockNotificationFailures: NotificationLog[] = [
+  {
+    id: 1,
+    reservation_id: "33333333-3333-3333-3333-333333333333",
+    channel: "email",
+    kind: "guest_confirm",
+    status: "failed",
+    recipient: "tanaka@example.com",
+    error_message: "Resend: 451 mailbox full",
+    attempted_at: daysFromNow(-1, 12, 30),
+  },
+  {
+    id: 2,
+    reservation_id: null,
+    channel: "telegram",
+    kind: "admin_alert",
+    status: "failed",
+    recipient: "-5035360168",
+    error_message: "Telegram: 401 unauthorized — bot token rotated",
+    attempted_at: daysFromNow(-2, 9, 15),
+  },
+];

@@ -3,8 +3,17 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { Reservation } from "@/lib/db/types";
+import type { AdminLang } from "@/lib/auth/admin-lang";
+import { formatPHP } from "@/lib/domain/reservation";
 
-export function NoShowButton({ reservation }: { reservation: Reservation }) {
+export function NoShowButton({
+  reservation,
+  lang,
+}: {
+  reservation: Reservation;
+  lang: AdminLang;
+}) {
+  const ti = (ja: string, en: string) => (lang === "ja" ? ja : en);
   const [confirming, setConfirming] = useState(false);
   const [status, setStatus] = useState<"idle" | "pending" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -38,7 +47,7 @@ export function NoShowButton({ reservation }: { reservation: Reservation }) {
         className="inline-flex items-center gap-2 border border-red-500/40 px-4 py-2 text-xs uppercase tracking-[0.14em] text-red-400 hover:bg-red-500/10"
       >
         <AlertTriangle size={14} aria-hidden="true" />
-        Mark as no-show
+        {ti("no-showにする", "Mark as no-show")}
       </button>
     );
   }
@@ -46,7 +55,10 @@ export function NoShowButton({ reservation }: { reservation: Reservation }) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-red-400">
-        Confirm: deposit will be retained, balance forfeited.
+        {ti(
+          `デポジット ${formatPHP(reservation.deposit_centavos, lang)} 保留 / 残金 ${formatPHP(reservation.balance_centavos, lang)} 失効。確定しますか?`,
+          `Deposit ${formatPHP(reservation.deposit_centavos, lang)} retained · balance ${formatPHP(reservation.balance_centavos, lang)} forfeited. Confirm?`
+        )}
       </p>
       <div className="flex gap-2">
         <button
@@ -58,10 +70,10 @@ export function NoShowButton({ reservation }: { reservation: Reservation }) {
           {status === "pending" ? (
             <>
               <Loader2 className="animate-spin" size={14} aria-hidden="true" />
-              Processing...
+              {ti("処理中...", "Processing...")}
             </>
           ) : (
-            "Yes, no-show"
+            ti("はい、no-show", "Yes, no-show")
           )}
         </button>
         <button
@@ -69,7 +81,7 @@ export function NoShowButton({ reservation }: { reservation: Reservation }) {
           onClick={() => setConfirming(false)}
           className="text-xs uppercase tracking-[0.14em] text-text-muted hover:text-foreground"
         >
-          Cancel
+          {ti("やめる", "Cancel")}
         </button>
       </div>
       {status === "error" && <p className="text-xs text-red-400">{errorMsg}</p>}

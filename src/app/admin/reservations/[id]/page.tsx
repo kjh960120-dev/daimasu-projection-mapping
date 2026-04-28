@@ -1,24 +1,35 @@
 /**
  * /admin/reservations/[id] — single-reservation detail + actions.
  *
- * Owner can:
- *  - Mark as settled (closes the reservation, records payment method + amount)
- *  - Mark as no-show
- *  - View payment ledger (deposit + refunds)
- *  - View audit log
+ * JA/EN switchable. Includes:
+ *  - reservation detail card
+ *  - actions: settle, no-show, cancel-with-refund-override
+ *  - repeat-customer history (count + last visit + total spend)
+ *  - payment ledger (deposit + refunds)
+ *  - notification log (so the owner sees if confirms/reminders failed)
+ *  - audit log
  */
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireAdminOrRedirect } from "@/lib/auth/admin";
+import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
 import { formatPHP } from "@/lib/domain/reservation";
-import type { Payment, Reservation } from "@/lib/db/types";
+import type {
+  NotificationLog,
+  Payment,
+  Reservation,
+} from "@/lib/db/types";
+import { mockReservations, mockPayments } from "../../preview-mode";
 import { SettleForm } from "./settle-form";
 import { NoShowButton } from "./no-show-button";
+import { CancelWithRefundForm } from "./cancel-form";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 
 interface AuditRow {
   id: number;
@@ -28,17 +39,68 @@ interface AuditRow {
   reason: string | null;
 }
 
+interface RepeatStats {
+  total_visits: number;
+  last_visit: string | null;
+  no_show_count: number;
+  total_net_centavos: number;
+}
+
 export default async function ReservationDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdminOrRedirect();
+  const lang = await getAdminLang();
   const { id } = await params;
-  const sb = adminClient();
 
-  const [{ data: reservation }, { data: payments }, { data: audits }] =
-    await Promise.all([
+  let reservation: Reservation | null = null;
+  let payments: Payment[] | null = null;
+  let audits: AuditRow[] | null = null;
+  let notifications: NotificationLog[] | null = null;
+  let repeat: RepeatStats = {
+    total_visits: 0,
+    last_visit: null,
+    no_show_count: 0,
+    total_net_centavos: 0,
+  };
+
+  if (PREVIEW_MODE) {
+    reservation = mockReservations.find((r) => r.id === id) ?? null;
+    payments = mockPayments.filter((p) => p.reservation_id === id);
+    notifications = [];
+    audits = [];
+    if (reservation) {
+      const sameGuest = mockReservations.filter(
+        (r) =>
+          r.id !== reservation!.id &&
+          (r.guest_phone === reservation!.guest_phone ||
+            r.guest_email === reservation!.guest_email)
+      );
+      const completed = sameGuest.filter((r) => r.status === "completed");
+      repeat = {
+        total_visits: completed.length,
+        last_visit:
+          completed
+            .map((r) => r.service_date)
+            .sort()
+            .reverse()[0] ?? null,
+        no_show_count: sameGuest.filter((r) => r.status === "no_show").length,
+        total_net_centavos: completed.reduce(
+          (s, r) => s + (r.settlement_centavos ?? 0),
+          0
+        ),
+      };
+    }
+  } else {
+    await requireAdminOrRedirect();
+    const sb = adminClient();
+    const [
+      { data: rRow },
+      { data: pRows },
+      { data: aRows },
+      { data: nRows },
+    ] = await Promise.all([
       sb.from("reservations").select("*").eq("id", id).maybeSingle<Reservation>(),
       sb
         .from("payments")
@@ -53,7 +115,71 @@ export default async function ReservationDetailPage({
         .order("occurred_at", { ascending: false })
         .limit(50)
         .returns<AuditRow[]>(),
+      sb
+        .from("notification_log")
+        .select("*")
+        .eq("reservation_id", id)
+        .order("attempted_at", { ascending: false })
+        .limit(20)
+        .returns<NotificationLog[]>(),
     ]);
+    reservation = rRow;
+    payments = pRows;
+    audits = aRows;
+    notifications = nRows;
+
+    if (reservation) {
+      // Two separate queries (Postgrest's `.or()` splits on commas, which is
+      // fragile when phone/email values contain commas or other URL-tricky
+      // characters). Dedupe in JS.
+      const [{ data: byPhone }, { data: byEmail }] = await Promise.all([
+        sb
+          .from("reservations")
+          .select("id,status,service_date,settlement_centavos")
+          .eq("guest_phone", reservation.guest_phone)
+          .neq("id", id)
+          .returns<
+            Pick<
+              Reservation,
+              "id" | "status" | "service_date" | "settlement_centavos"
+            >[]
+          >(),
+        reservation.guest_email
+          ? sb
+              .from("reservations")
+              .select("id,status,service_date,settlement_centavos")
+              .eq("guest_email", reservation.guest_email)
+              .neq("id", id)
+              .returns<
+                Pick<
+                  Reservation,
+                  "id" | "status" | "service_date" | "settlement_centavos"
+                >[]
+              >()
+          : Promise.resolve({ data: [] }),
+      ]);
+      const seen = new Set<string>();
+      const sameGuest = [...(byPhone ?? []), ...(byEmail ?? [])].filter((r) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
+      const completed = sameGuest.filter((r) => r.status === "completed");
+      repeat = {
+        total_visits: completed.length,
+        last_visit:
+          completed
+            .map((r) => r.service_date)
+            .sort()
+            .reverse()[0] ?? null,
+        no_show_count: sameGuest.filter((r) => r.status === "no_show").length,
+        total_net_centavos: completed.reduce(
+          (s, r) => s + (r.settlement_centavos ?? 0),
+          0
+        ),
+      };
+    }
+  }
 
   if (!reservation) notFound();
 
@@ -61,59 +187,93 @@ export default async function ReservationDetailPage({
     payments?.reduce((sum, p) => sum + p.amount_centavos, 0) ?? 0;
 
   return (
-    <div className="px-8 py-8 sm:px-12 sm:py-12">
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
       <Link
         href="/admin/reservations"
         className="mb-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-text-muted hover:text-foreground"
       >
         <ArrowLeft size={14} />
-        Reservations
+        {ti(lang, "予約一覧へ", "Reservations")}
       </Link>
 
-      <h1 className="mb-2 font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.04em] text-foreground">
-        {reservation.guest_name}
-      </h1>
-      <p className="mb-8 text-sm text-text-muted">
-        {new Date(reservation.service_starts_at).toLocaleString("en-PH", {
-          timeZone: "Asia/Manila",
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-        {" · "}
-        {reservation.party_size} pax
-      </p>
+      <div className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <h1 className="font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.04em] text-foreground">
+            {reservation.guest_name}
+          </h1>
+          <p className="mt-1 text-sm text-text-muted">
+            {new Date(reservation.service_starts_at).toLocaleString(
+              lang === "ja" ? "ja-JP" : "en-PH",
+              {
+                timeZone: "Asia/Manila",
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }
+            )}
+            {" · "}
+            {reservation.party_size}
+            {ti(lang, "名", " pax")}
+          </p>
+        </div>
+        {repeat.total_visits > 0 && (
+          <RepeatBadge stats={repeat} lang={lang} />
+        )}
+        {repeat.no_show_count > 0 && (
+          <span className="border border-red-500/60 bg-red-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-red-400">
+            {ti(
+              lang,
+              `過去 no-show ${repeat.no_show_count}回`,
+              `${repeat.no_show_count} prior no-show${repeat.no_show_count > 1 ? "s" : ""}`
+            )}
+          </span>
+        )}
+      </div>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        {/* Left: Detail card */}
         <div className="border border-border bg-surface/40 p-6">
           <h2 className="mb-4 text-xs uppercase tracking-[0.18em] text-gold/70">
-            Reservation
+            {ti(lang, "予約詳細", "Reservation")}
           </h2>
-          <DataRow label="Status" value={reservation.status} />
-          <DataRow label="Phone" value={reservation.guest_phone} />
-          <DataRow label="Email" value={reservation.guest_email} />
-          <DataRow label="Lang" value={reservation.guest_lang.toUpperCase()} />
-          <DataRow label="Source" value={reservation.source} />
           <DataRow
-            label="Course total"
-            value={formatPHP(reservation.total_centavos)}
+            label={ti(lang, "状態", "Status")}
+            value={statusLabel(reservation.status, lang)}
           />
           <DataRow
-            label="Deposit (paid)"
-            value={formatPHP(reservation.deposit_centavos)}
+            label={ti(lang, "経路", "Source")}
+            value={sourceLabel(reservation.source, lang)}
           />
           <DataRow
-            label="Balance (on-site)"
-            value={formatPHP(reservation.balance_centavos)}
+            label={ti(lang, "電話", "Phone")}
+            value={reservation.guest_phone}
+          />
+          <DataRow
+            label={ti(lang, "メール", "Email")}
+            value={reservation.guest_email || "—"}
+          />
+          <DataRow
+            label={ti(lang, "言語", "Lang")}
+            value={reservation.guest_lang.toUpperCase()}
+          />
+          <DataRow
+            label={ti(lang, "コース合計", "Course total")}
+            value={formatPHP(reservation.total_centavos, lang)}
+          />
+          <DataRow
+            label={ti(lang, "デポジット (受領)", "Deposit (paid)")}
+            value={formatPHP(reservation.deposit_centavos, lang)}
+          />
+          <DataRow
+            label={ti(lang, "残金 (店舗精算)", "Balance (on-site)")}
+            value={formatPHP(reservation.balance_centavos, lang)}
           />
           {reservation.notes && (
             <div className="mt-4 border-t border-border pt-3">
               <p className="text-[10px] uppercase tracking-[0.18em] text-text-muted">
-                Notes
+                {ti(lang, "備考", "Notes")}
               </p>
               <p className="mt-1 whitespace-pre-line text-sm text-foreground">
                 {reservation.notes}
@@ -122,41 +282,52 @@ export default async function ReservationDetailPage({
           )}
         </div>
 
-        {/* Right: Actions */}
         <div className="border border-border bg-surface/40 p-6">
           <h2 className="mb-4 text-xs uppercase tracking-[0.18em] text-gold/70">
-            Actions
+            {ti(lang, "操作", "Actions")}
           </h2>
           {reservation.status === "confirmed" ? (
-            <>
-              <SettleForm reservation={reservation} />
-              <div className="mt-6 border-t border-border pt-6">
-                <NoShowButton reservation={reservation} />
+            <div className="flex flex-col gap-6">
+              <SettleForm reservation={reservation} lang={lang} />
+              <div className="border-t border-border pt-6">
+                <NoShowButton reservation={reservation} lang={lang} />
               </div>
-            </>
+              <div className="border-t border-border pt-6">
+                <CancelWithRefundForm reservation={reservation} lang={lang} />
+              </div>
+            </div>
           ) : reservation.status === "completed" ? (
             <p className="text-sm text-green-400">
-              Settled on{" "}
+              {ti(lang, "精算済み: ", "Settled on ")}
               {reservation.settled_at &&
-                new Date(reservation.settled_at).toLocaleString("en-PH", {
-                  timeZone: "Asia/Manila",
-                })}
+                new Date(reservation.settled_at).toLocaleString(
+                  lang === "ja" ? "ja-JP" : "en-PH",
+                  { timeZone: "Asia/Manila" }
+                )}
               {" · "}
               {reservation.settlement_method ?? "—"}
               {" · "}
-              {formatPHP(reservation.settlement_centavos ?? 0)}
+              {formatPHP(reservation.settlement_centavos ?? 0, lang)}
             </p>
           ) : reservation.status === "no_show" ? (
             <p className="text-sm text-red-400">
-              Marked as no-show. Deposit retained.
+              {ti(
+                lang,
+                "no-shoとしてマーク。デポジットは保留。",
+                "Marked as no-show. Deposit retained."
+              )}
             </p>
           ) : reservation.status === "pending_payment" ? (
             <p className="text-sm text-yellow-400">
-              Awaiting Stripe Checkout completion. Released automatically after 30 min.
+              {ti(
+                lang,
+                "Stripe Checkout 完了待ち。30分でリリース。",
+                "Awaiting Stripe Checkout. Auto-released after 30 min."
+              )}
             </p>
           ) : (
             <p className="text-sm text-text-muted">
-              Cancelled. No further action.
+              {ti(lang, "キャンセル済み。", "Cancelled. No further action.")}
             </p>
           )}
         </div>
@@ -165,84 +336,138 @@ export default async function ReservationDetailPage({
       {/* Payments */}
       <section className="mt-8 border border-border bg-surface/40">
         <header className="border-b border-border px-6 py-4 text-xs uppercase tracking-[0.18em] text-gold/70">
-          Payment ledger · Net received {formatPHP(totalReceived)}
+          {ti(lang, "決済履歴", "Payment ledger")} ·{" "}
+          {ti(lang, "受領合計", "Net received")} {formatPHP(totalReceived, lang)}
         </header>
         {payments && payments.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead className="border-b border-border text-xs uppercase tracking-[0.16em] text-text-muted">
-              <tr>
-                <th className="px-4 py-3 text-left">When</th>
-                <th className="px-4 py-3 text-left">Kind</th>
-                <th className="px-4 py-3 text-left">Provider</th>
-                <th className="px-4 py-3 text-left">Method</th>
-                <th className="px-4 py-3 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.id} className="border-b border-border/40 last:border-b-0">
-                  <td className="px-4 py-3 font-mono text-xs text-text-muted">
-                    {new Date(p.created_at).toLocaleString("en-PH", {
-                      timeZone: "Asia/Manila",
-                    })}
-                  </td>
-                  <td className="px-4 py-3">{p.kind}</td>
-                  <td className="px-4 py-3 text-text-muted">{p.provider}</td>
-                  <td className="px-4 py-3 text-text-muted">{p.method ?? "—"}</td>
-                  <td
-                    className={
-                      p.amount_centavos < 0
-                        ? "px-4 py-3 text-right text-red-400"
-                        : "px-4 py-3 text-right text-foreground"
-                    }
-                  >
-                    {formatPHP(p.amount_centavos)}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border text-xs uppercase tracking-[0.16em] text-text-muted">
+                <tr>
+                  <th className="px-4 py-3 text-left">{ti(lang, "日時", "When")}</th>
+                  <th className="px-4 py-3 text-left">{ti(lang, "種別", "Kind")}</th>
+                  <th className="px-4 py-3 text-left">{ti(lang, "提供元", "Provider")}</th>
+                  <th className="px-4 py-3 text-left">{ti(lang, "方法", "Method")}</th>
+                  <th className="px-4 py-3 text-right">{ti(lang, "金額", "Amount")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.id} className="border-b border-border/40 last:border-b-0">
+                    <td className="px-4 py-3 font-mono text-xs text-text-muted">
+                      {new Date(p.created_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
+                        timeZone: "Asia/Manila",
+                      })}
+                    </td>
+                    <td className="px-4 py-3">{paymentKindLabel(p.kind, lang)}</td>
+                    <td className="px-4 py-3 text-text-muted">{p.provider}</td>
+                    <td className="px-4 py-3 text-text-muted">{p.method ?? "—"}</td>
+                    <td
+                      className={
+                        p.amount_centavos < 0
+                          ? "px-4 py-3 text-right text-red-400"
+                          : "px-4 py-3 text-right text-foreground"
+                      }
+                    >
+                      {formatPHP(p.amount_centavos, lang)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <p className="px-4 py-6 text-sm text-text-muted">No payments recorded.</p>
+          <p className="px-4 py-6 text-sm text-text-muted">
+            {ti(lang, "決済履歴なし。", "No payments recorded.")}
+          </p>
         )}
       </section>
+
+      {/* Notifications */}
+      {notifications && notifications.length > 0 && (
+        <section className="mt-8 border border-border bg-surface/40">
+          <header className="border-b border-border px-6 py-4 text-xs uppercase tracking-[0.18em] text-gold/70">
+            {ti(lang, "通知ログ", "Notification log")}
+          </header>
+          <ul className="divide-y divide-border/40">
+            {notifications.map((n) => (
+              <li
+                key={n.id}
+                className="grid grid-cols-[110px_70px_70px_1fr_auto] items-center gap-3 px-4 py-2 text-[12px]"
+              >
+                <span className="font-mono text-[11px] text-text-muted">
+                  {new Date(n.attempted_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
+                    timeZone: "Asia/Manila",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-gold/70">
+                  {n.channel}
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                  {n.kind.replace(/_/g, " ")}
+                </span>
+                <span className="truncate text-text-muted">
+                  {n.error_message ?? n.recipient ?? "—"}
+                </span>
+                <span
+                  className={
+                    n.status === "sent"
+                      ? "text-[10px] uppercase tracking-[0.14em] text-green-400"
+                      : n.status === "failed"
+                        ? "text-[10px] uppercase tracking-[0.14em] text-red-400"
+                        : "text-[10px] uppercase tracking-[0.14em] text-text-muted"
+                  }
+                >
+                  {n.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Audit log */}
       <section className="mt-8 border border-border bg-surface/40">
         <header className="border-b border-border px-6 py-4 text-xs uppercase tracking-[0.18em] text-gold/70">
-          Audit log
+          {ti(lang, "監査ログ", "Audit log")}
         </header>
-        <table className="w-full text-sm">
-          <thead className="border-b border-border text-xs uppercase tracking-[0.16em] text-text-muted">
-            <tr>
-              <th className="px-4 py-3 text-left">When</th>
-              <th className="px-4 py-3 text-left">Actor</th>
-              <th className="px-4 py-3 text-left">Action</th>
-              <th className="px-4 py-3 text-left">Reason</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(audits ?? []).map((a) => (
-              <tr key={a.id} className="border-b border-border/40 last:border-b-0">
-                <td className="px-4 py-3 font-mono text-xs text-text-muted">
-                  {new Date(a.occurred_at).toLocaleString("en-PH", {
-                    timeZone: "Asia/Manila",
-                  })}
-                </td>
-                <td className="px-4 py-3 text-text-muted">{a.actor}</td>
-                <td className="px-4 py-3">{a.action}</td>
-                <td className="px-4 py-3 text-text-muted">{a.reason ?? "—"}</td>
-              </tr>
-            ))}
-            {(audits ?? []).length === 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border text-xs uppercase tracking-[0.16em] text-text-muted">
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-sm text-text-muted">
-                  No audit events.
-                </td>
+                <th className="px-4 py-3 text-left">{ti(lang, "日時", "When")}</th>
+                <th className="px-4 py-3 text-left">{ti(lang, "実行者", "Actor")}</th>
+                <th className="px-4 py-3 text-left">{ti(lang, "操作", "Action")}</th>
+                <th className="px-4 py-3 text-left">{ti(lang, "理由", "Reason")}</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(audits ?? []).map((a) => (
+                <tr key={a.id} className="border-b border-border/40 last:border-b-0">
+                  <td className="px-4 py-3 font-mono text-xs text-text-muted">
+                    {new Date(a.occurred_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
+                      timeZone: "Asia/Manila",
+                    })}
+                  </td>
+                  <td className="px-4 py-3 text-text-muted">{a.actor}</td>
+                  <td className="px-4 py-3">{actionLabel(a.action, lang)}</td>
+                  <td className="px-4 py-3 text-text-muted">{a.reason ?? "—"}</td>
+                </tr>
+              ))}
+              {(audits ?? []).length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-text-muted">
+                    {ti(lang, "監査ログなし。", "No audit events.")}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );
@@ -252,7 +477,91 @@ function DataRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4 border-b border-border/40 py-2 text-sm last:border-b-0">
       <span className="text-text-muted">{label}</span>
-      <span className="text-foreground font-[family-name:var(--font-noto-serif)]">{value}</span>
+      <span className="text-right text-foreground">{value}</span>
     </div>
   );
+}
+
+function RepeatBadge({
+  stats,
+  lang,
+}: {
+  stats: RepeatStats;
+  lang: AdminLang;
+}) {
+  return (
+    <div className="border border-gold/60 bg-gold/10 px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-gold">
+      <div className="flex items-baseline gap-3">
+        <span className="font-mono text-base text-gold">
+          {stats.total_visits}
+        </span>
+        <span>{ti(lang, "回目のご来店", `prior visit${stats.total_visits > 1 ? "s" : ""}`)}</span>
+      </div>
+      <div className="mt-0.5 text-[10px] normal-case text-gold/70">
+        {stats.last_visit && (
+          <span>
+            {ti(lang, "前回 ", "Last ")}
+            {stats.last_visit}
+          </span>
+        )}
+        {stats.total_net_centavos > 0 && (
+          <span> · {formatPHP(stats.total_net_centavos, lang)} </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function statusLabel(status: Reservation["status"], lang: AdminLang): string {
+  const map: Record<Reservation["status"], { ja: string; en: string }> = {
+    pending_payment: { ja: "決済待ち", en: "Pending payment" },
+    confirmed: { ja: "確定", en: "Confirmed" },
+    completed: { ja: "終了", en: "Completed" },
+    no_show: { ja: "no-show", en: "No-show" },
+    cancelled_full: { ja: "キャンセル (100%返金)", en: "Cancelled (100% refund)" },
+    cancelled_partial: { ja: "キャンセル (50%返金)", en: "Cancelled (50% refund)" },
+    cancelled_late: { ja: "キャンセル (返金なし)", en: "Cancelled (no refund)" },
+    expired: { ja: "期限切れ", en: "Expired" },
+  };
+  return map[status][lang];
+}
+
+function sourceLabel(source: Reservation["source"], lang: AdminLang): string {
+  const map: Record<Reservation["source"], { ja: string; en: string }> = {
+    web: { ja: "Web (オンライン)", en: "Web (online)" },
+    staff: { ja: "店舗 (手動)", en: "Staff (manual)" },
+    phone: { ja: "電話", en: "Phone" },
+    walkin: { ja: "来店", en: "Walk-in" },
+  };
+  return map[source][lang];
+}
+
+function paymentKindLabel(
+  kind: Payment["kind"],
+  lang: AdminLang
+): string {
+  const map: Record<Payment["kind"], { ja: string; en: string }> = {
+    deposit_capture: { ja: "デポジット受領", en: "Deposit captured" },
+    refund_full: { ja: "全額返金", en: "Full refund" },
+    refund_partial: { ja: "一部返金", en: "Partial refund" },
+    on_site_settlement: { ja: "店舗精算", en: "On-site settlement" },
+    manual_adjustment: { ja: "手動調整", en: "Manual adjustment" },
+  };
+  return map[kind][lang];
+}
+
+function actionLabel(action: string, lang: AdminLang): string {
+  const map: Record<string, { ja: string; en: string }> = {
+    "reservation.create": { ja: "予約作成", en: "Reservation created" },
+    "reservation.confirm": { ja: "予約確定", en: "Reservation confirmed" },
+    "reservation.no_show": { ja: "no-showマーク", en: "Marked no-show" },
+    "reservation.cancel.full": { ja: "100%返金キャンセル", en: "Cancelled (100% refund)" },
+    "reservation.cancel.partial": { ja: "50%返金キャンセル", en: "Cancelled (50% refund)" },
+    "reservation.cancel.late": { ja: "返金なしキャンセル", en: "Cancelled (no refund)" },
+    "reservation.cancel.override": { ja: "返金オーバーライドでキャンセル", en: "Cancelled (refund override)" },
+    "reservation.settle": { ja: "精算完了", en: "Settled" },
+    "reservation.expired": { ja: "決済期限切れ", en: "Expired" },
+    "settings.update": { ja: "設定更新", en: "Settings updated" },
+  };
+  return map[action]?.[lang] ?? action;
 }

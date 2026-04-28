@@ -68,3 +68,47 @@ export const availabilityQuerySchema = z.object({
 });
 
 export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
+
+/** Owner-side manual booking (phone / walk-in / staff). No deposit, status=confirmed. */
+export const adminCreateReservationSchema = z.object({
+  service_date: dateString,
+  seating: z.enum(["s1", "s2"]),
+  party_size: z.number().int().min(1).max(8),
+  guest_name: z.preprocess(cleanString, z.string().min(1).max(80)),
+  guest_email: z.preprocess(
+    (raw) => (typeof raw === "string" ? raw.trim().toLowerCase() : raw),
+    z.union([z.string().email().max(254), z.literal("")])
+  ),
+  guest_phone: phone,
+  guest_lang: z.enum(["ja", "en"]).default("ja"),
+  notes: z.preprocess(
+    (raw) => (raw == null ? null : cleanString(raw)),
+    z.string().max(280).nullable().optional()
+  ),
+  source: z.enum(["staff", "phone", "walkin"]),
+  // Cash deposit already collected at the bar?
+  deposit_received: z.boolean().default(false),
+});
+
+export type AdminCreateReservationInput = z.infer<
+  typeof adminCreateReservationSchema
+>;
+
+/** Refund override — owner can cap or extend the auto-computed refund amount. */
+export const refundOverrideSchema = z.object({
+  amount_centavos: z.number().int().min(0).max(100_000_00),
+  reason: z.preprocess(cleanString, z.string().min(3).max(280)),
+});
+
+export type RefundOverrideInput = z.infer<typeof refundOverrideSchema>;
+
+/** Toggle / set / unset a closed date. */
+export const closedDateSchema = z.object({
+  closed_date: dateString,
+  reason: z.preprocess(
+    (raw) => (raw == null ? null : cleanString(raw)),
+    z.string().max(140).nullable().optional()
+  ),
+});
+
+export type ClosedDateInput = z.infer<typeof closedDateSchema>;

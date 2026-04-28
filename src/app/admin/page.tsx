@@ -40,7 +40,9 @@ import {
   mockNoShow,
   mockDaily,
   mockReservations,
+  mockNotificationFailures,
 } from "./preview-mode";
+import type { NotificationLog } from "@/lib/db/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,6 +78,7 @@ export default async function AdminDashboardPage() {
   let allUpcoming: Reservation[] | null = null;
   let unsettledPast: Reservation[] | null = null;
   let recentAudits: AuditRow[] | null = null;
+  let recentFailures: NotificationLog[] | null = null;
 
   if (PREVIEW_MODE) {
     settings = mockSettings;
@@ -92,6 +95,7 @@ export default async function AdminDashboardPage() {
       { id: 2, occurred_at: new Date(nowMs - 7200_000).toISOString(), actor: "system", action: "reservation.no_show", reservation_id: "55555555-5555-5555-5555-555555555555" },
       { id: 3, occurred_at: new Date(nowMs - 86400_000).toISOString(), actor: "guest", action: "reservation.cancel.full", reservation_id: "66666666-6666-6666-6666-666666666666" },
     ];
+    recentFailures = mockNotificationFailures;
   } else {
     await requireAdminOrRedirect();
     const sb = adminClient();
@@ -100,7 +104,7 @@ export default async function AdminDashboardPage() {
     const today = todayIsoDate();
     const dayPlus2 = isoDateDaysAhead(2);
 
-    const [settingsRes, monthlyRes, dailyRes, noShowRes, upcomingRes, unsettledRes, auditsRes] =
+    const [settingsRes, monthlyRes, dailyRes, noShowRes, upcomingRes, unsettledRes, auditsRes, failuresRes] =
       await Promise.all([
         sb.from("restaurant_settings").select("*").eq("id", 1).single<RestaurantSettings>(),
         sb.from("revenue_monthly").select("*").eq("month_start", monthIso).maybeSingle<RevenueMonthly>(),
@@ -134,6 +138,14 @@ export default async function AdminDashboardPage() {
           .order("occurred_at", { ascending: false })
           .limit(10)
           .returns<AuditRow[]>(),
+        sb
+          .from("notification_log")
+          .select("*")
+          .eq("status", "failed")
+          .gte("attempted_at", new Date(nowMs - 7 * 86400_000).toISOString())
+          .order("attempted_at", { ascending: false })
+          .limit(20)
+          .returns<NotificationLog[]>(),
       ]);
     settings = settingsRes.data;
     monthly = monthlyRes.data;
@@ -142,6 +154,7 @@ export default async function AdminDashboardPage() {
     allUpcoming = upcomingRes.data;
     unsettledPast = unsettledRes.data;
     recentAudits = auditsRes.data;
+    recentFailures = failuresRes.data;
   }
 
   const today = todayIsoDate();
@@ -222,7 +235,7 @@ export default async function AdminDashboardPage() {
       </section>
 
       {/* ── Action queue ─────────────────────────────────────────────────── */}
-      {(unsettledPast?.length || reminderDue.length || systemNoShows.length) ? (
+      {(unsettledPast?.length || reminderDue.length || systemNoShows.length || (recentFailures && recentFailures.length > 0)) ? (
         <section className="mb-8 border border-amber-500/30 bg-amber-500/[0.04] p-4">
           <h2 className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-amber-400">
             <AlertTriangle size={13} />
@@ -242,6 +255,18 @@ export default async function AdminDashboardPage() {
                 label={ti(lang, "24時間前リマインダー未送信", "24h reminder not yet sent")}
                 href="/admin/reservations?filter=upcoming"
                 tone="info"
+              />
+            )}
+            {recentFailures && recentFailures.length > 0 && (
+              <ActionItem
+                count={recentFailures.length}
+                label={ti(
+                  lang,
+                  "通知の送信失敗 (直近7日)",
+                  "Notification failures (last 7 days)"
+                )}
+                href="#notification-failures"
+                tone="danger"
               />
             )}
           </ul>
@@ -348,6 +373,58 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
+      {/* ── Notification failures (last 7 days) ─────────────────────────── */}
+      {recentFailures && recentFailures.length > 0 && (
+        <section id="notification-failures" className="mb-8">
+          <h2 className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-red-400/90">
+            <AlertTriangle size={13} />
+            {ti(lang, "通知の送信失敗 (直近7日)", "Notification failures (last 7 days)")}
+          </h2>
+          <ul className="border border-red-500/30 bg-red-500/[0.04] divide-y divide-red-500/15">
+            {recentFailures.map((f) => (
+              <li
+                key={f.id}
+                className="grid grid-cols-[110px_70px_90px_1fr_auto] items-center gap-3 px-3 py-2 text-[12px]"
+              >
+                <span className="font-mono text-[11px] text-text-muted">
+                  {new Date(f.attempted_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
+                    timeZone: "Asia/Manila",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-gold/70">
+                  {f.channel}
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                  {f.kind.replace(/_/g, " ")}
+                </span>
+                <span className="truncate text-red-400/90">
+                  {f.error_message ?? "—"}
+                </span>
+                {f.reservation_id && (
+                  <Link
+                    href={`/admin/reservations/${f.reservation_id}`}
+                    className="text-[10px] uppercase tracking-[0.16em] text-gold/70 hover:text-gold"
+                  >
+                    →
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-text-muted">
+            {ti(
+              lang,
+              "Telegram bot トークンや Resend ドメイン認証を /admin/settings で確認してください。",
+              "Check Telegram bot token / Resend domain verification in /admin/settings."
+            )}
+          </p>
+        </section>
+      )}
+
       {/* ── Recent activity (audit log preview) ──────────────────────────── */}
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-gold/70">
@@ -430,8 +507,14 @@ function ActionItem({
   count: number;
   label: string;
   href: string;
-  tone?: "info";
+  tone?: "info" | "danger";
 }) {
+  const badgeCls =
+    tone === "info"
+      ? "inline-flex h-6 w-6 items-center justify-center bg-gold/15 text-[11px] font-medium text-gold"
+      : tone === "danger"
+        ? "inline-flex h-6 w-6 items-center justify-center bg-red-500/15 text-[11px] font-medium text-red-400"
+        : "inline-flex h-6 w-6 items-center justify-center bg-amber-500/15 text-[11px] font-medium text-amber-400";
   return (
     <li>
       <Link
@@ -439,15 +522,7 @@ function ActionItem({
         className="group flex items-center justify-between gap-3 border border-border/30 bg-background/30 px-3 py-2 hover:border-gold/40 hover:bg-surface/50"
       >
         <span className="flex items-center gap-3">
-          <span
-            className={
-              tone === "info"
-                ? "inline-flex h-6 w-6 items-center justify-center bg-gold/15 text-[11px] font-medium text-gold"
-                : "inline-flex h-6 w-6 items-center justify-center bg-amber-500/15 text-[11px] font-medium text-amber-400"
-            }
-          >
-            {count}
-          </span>
+          <span className={badgeCls}>{count}</span>
           <span className="text-foreground">{label}</span>
         </span>
         <span className="text-[10px] uppercase tracking-[0.16em] text-gold/60 group-hover:text-gold">
