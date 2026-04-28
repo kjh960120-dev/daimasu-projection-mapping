@@ -70,12 +70,12 @@ export default function Header() {
             {/* eslint-disable-next-line @next/next/no-img-element -- static export, small brand mark */}
             <img
               src="/logo.png"
-              alt="DAIMASU"
-              width={440}
-              height={99}
+              alt="DAIMASU Japanese Bar"
+              width={408}
+              height={200}
               loading="eager"
               decoding="sync"
-              className="h-7 w-auto sm:h-8"
+              className="h-10 w-auto sm:h-12"
             />
           </a>
 
