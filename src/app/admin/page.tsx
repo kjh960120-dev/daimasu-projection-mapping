@@ -31,18 +31,17 @@ import { formatPHP } from "@/lib/domain/reservation";
 import type {
   Reservation,
   RestaurantSettings,
-  RevenueDaily,
   RevenueMonthly,
 } from "@/lib/db/types";
 import {
   mockSettings,
   mockMonthly,
   mockNoShow,
-  mockDaily,
   mockReservations,
   mockNotificationFailures,
 } from "./preview-mode";
 import type { NotificationLog } from "@/lib/db/types";
+import { QuickTiles } from "./_components/quick-tiles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,7 +72,6 @@ export default async function AdminDashboardPage() {
 
   let settings: RestaurantSettings | null = null;
   let monthly: RevenueMonthly | null = null;
-  let daily7: RevenueDaily[] | null = null;
   let noShow: NoShowRow | null = null;
   let allUpcoming: Reservation[] | null = null;
   let unsettledPast: Reservation[] | null = null;
@@ -84,7 +82,6 @@ export default async function AdminDashboardPage() {
     settings = mockSettings;
     monthly = mockMonthly;
     noShow = mockNoShow;
-    daily7 = mockDaily;
     // Surface every confirmed/completed/no_show booking ±2 days for the preview.
     allUpcoming = mockReservations;
     unsettledPast = mockReservations.filter(
@@ -104,17 +101,10 @@ export default async function AdminDashboardPage() {
     const today = todayIsoDate();
     const dayPlus2 = isoDateDaysAhead(2);
 
-    const [settingsRes, monthlyRes, dailyRes, noShowRes, upcomingRes, unsettledRes, auditsRes, failuresRes] =
+    const [settingsRes, monthlyRes, noShowRes, upcomingRes, unsettledRes, auditsRes, failuresRes] =
       await Promise.all([
         sb.from("restaurant_settings").select("*").eq("id", 1).single<RestaurantSettings>(),
         sb.from("revenue_monthly").select("*").eq("month_start", monthIso).maybeSingle<RevenueMonthly>(),
-        sb
-          .from("revenue_daily")
-          .select("*")
-          .gte("service_date", isoDateDaysAgo(7))
-          .lte("service_date", isoDateDaysAgo(0))
-          .order("service_date", { ascending: false })
-          .returns<RevenueDaily[]>(),
         sb.from("no_show_rate").select("*").eq("month_start", monthIso).maybeSingle<NoShowRow>(),
         sb
           .from("reservations")
@@ -149,7 +139,6 @@ export default async function AdminDashboardPage() {
       ]);
     settings = settingsRes.data;
     monthly = monthlyRes.data;
-    daily7 = dailyRes.data;
     noShow = noShowRes.data;
     allUpcoming = upcomingRes.data;
     unsettledPast = unsettledRes.data;
@@ -200,6 +189,17 @@ export default async function AdminDashboardPage() {
           {ti(lang, "予約一覧へ →", "All reservations →")}
         </Link>
       </header>
+
+      {/* ── Quick-access tiles (Airレジ-style) ─────────────────────────── */}
+      <QuickTiles
+        lang={lang}
+        todayCount={todayList.length}
+        upcomingCount={(allUpcoming ?? []).length}
+        pendingActionCount={
+          (unsettledPast?.length ?? 0) +
+          (recentFailures?.length ?? 0)
+        }
+      />
 
       {/* ── KPI bar ──────────────────────────────────────────────────────── */}
       <section className="mb-8 grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -318,59 +318,6 @@ export default async function AdminDashboardPage() {
           onlineSeats={onlineSeats}
           lang={lang}
         />
-      </section>
-
-      {/* ── Past 7 days revenue ──────────────────────────────────────────── */}
-      <section className="mb-10">
-        <h2 className="mb-4 flex items-center gap-2 admin-section-label">
-          <Wallet size={13} />
-          {ti(lang, "直近7日間の売上", "Past 7 days")}
-        </h2>
-        <div className="overflow-x-auto border border-border bg-surface">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border text-[11px] uppercase tracking-[0.14em] text-text-secondary">
-              <tr>
-                <th className="px-3 py-2 text-left">{ti(lang, "日付", "Date")}</th>
-                <th className="px-3 py-2 text-right">{ti(lang, "予約", "Cov.")}</th>
-                <th className="px-3 py-2 text-right">{ti(lang, "純売上", "Net rev")}</th>
-                <th className="px-3 py-2 text-right">{ti(lang, "No-show", "No-show")}</th>
-                <th className="px-3 py-2 text-right">{ti(lang, "保留売上", "Kept")}</th>
-                <th className="px-3 py-2 text-right">{ti(lang, "失った売上", "Lost")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(daily7 ?? []).map((d) => (
-                <tr key={d.service_date} className="border-b border-border/40 last:border-b-0">
-                  <td className="px-3 py-2 admin-meta admin-num">{d.service_date}</td>
-                  <td className="px-3 py-2 text-right">{d.covers_booked}</td>
-                  <td className="px-3 py-2 text-right">{formatPHP(d.net_completed_centavos, lang)}</td>
-                  <td
-                    className={
-                      d.no_show_count > 0
-                        ? "px-3 py-2 text-right text-red-400"
-                        : "px-3 py-2 text-right text-text-muted"
-                    }
-                  >
-                    {d.no_show_count}
-                  </td>
-                  <td className="px-3 py-2 text-right text-gold">
-                    {formatPHP(d.no_show_deposit_kept_centavos, lang)}
-                  </td>
-                  <td className="px-3 py-2 text-right text-red-400/80">
-                    {formatPHP(d.no_show_lost_centavos, lang)}
-                  </td>
-                </tr>
-              ))}
-              {(daily7 ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-sm text-text-muted">
-                    {ti(lang, "データがありません。", "No data.")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </section>
 
       {/* ── Notification failures (last 7 days) ─────────────────────────── */}
@@ -747,11 +694,6 @@ function paxAt(list: Reservation[], slot: "s1" | "s2"): number {
 
 function todayIsoDate(): string {
   const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-  return d.toISOString().slice(0, 10);
-}
-function isoDateDaysAgo(days: number): string {
-  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-  d.setDate(d.getDate() - days);
   return d.toISOString().slice(0, 10);
 }
 function isoDateDaysAhead(days: number): string {

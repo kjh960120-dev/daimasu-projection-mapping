@@ -140,14 +140,20 @@ export function ManualBookingForm({
             />
           </Field>
           <Field label={ti("時間帯", "Seating")}>
-            <select
-              value={seating}
-              onChange={(e) => setSeating(e.target.value as SeatingSlot)}
-              className={inputCls}
-            >
-              <option value="s1">{settings.seating_1_label} (1部)</option>
-              <option value="s2">{settings.seating_2_label} (2部)</option>
-            </select>
+            <div className="grid grid-cols-2 gap-2">
+              <SeatingButton
+                active={seating === "s1"}
+                onClick={() => setSeating("s1")}
+                time={settings.seating_1_label}
+                label={ti("1部", "Seating 1")}
+              />
+              <SeatingButton
+                active={seating === "s2"}
+                onClick={() => setSeating("s2")}
+                time={settings.seating_2_label}
+                label={ti("2部", "Seating 2")}
+              />
+            </div>
           </Field>
           <Field label={ti("人数", "Party size")}>
             <NumPadInput
@@ -313,6 +319,35 @@ export function ManualBookingForm({
 
 const inputCls =
   "border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-gold/60 focus:outline-none";
+
+function SeatingButton({
+  active,
+  onClick,
+  time,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  time: string;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        active
+          ? "flex h-14 flex-col items-center justify-center border-2 border-gold bg-gold/[0.08] px-3 text-foreground"
+          : "flex h-14 flex-col items-center justify-center border border-border bg-background text-text-secondary hover:border-gold/50 hover:text-foreground"
+      }
+    >
+      <span className="font-mono admin-num text-base font-semibold">
+        {time}
+      </span>
+      <span className="text-[11px] uppercase tracking-[0.10em]">{label}</span>
+    </button>
+  );
+}
 
 function Field({
   label,
