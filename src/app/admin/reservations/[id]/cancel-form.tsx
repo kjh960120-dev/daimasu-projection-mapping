@@ -5,6 +5,7 @@ import { Loader2, AlertTriangle } from "lucide-react";
 import type { Reservation } from "@/lib/db/types";
 import type { AdminLang } from "@/lib/auth/admin-lang";
 import { formatPHP } from "@/lib/domain/reservation";
+import { NumPadInput } from "../../_components/num-pad-input";
 
 /**
  * Owner-side cancellation with refund override.
@@ -111,15 +112,19 @@ export function CancelWithRefundForm({
 
       {override && (
         <>
-          <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary">
-            {ti("返金額 (₱)", "Refund amount (₱)")}
-            <input
-              type="number"
-              min="0"
-              step="0.01"
+          <div className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary">
+            <span>{ti("返金額 (₱)", "Refund amount (₱)")}</span>
+            <NumPadInput
               value={amountPesos}
-              onChange={(e) => setAmountPesos(e.target.value)}
-              className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
+              onChange={setAmountPesos}
+              label={ti("返金額を入力", "Enter refund amount")}
+              subText={ti(
+                `預かり中: ${formatPHP(reservation.deposit_centavos, lang)}`,
+                `Held: ${formatPHP(reservation.deposit_centavos, lang)}`
+              )}
+              prefix="₱"
+              allowDecimal
+              placeholder="0"
             />
             <span className="text-[11px] normal-case text-text-secondary">
               {ti(
@@ -127,7 +132,7 @@ export function CancelWithRefundForm({
                 `Held: ${formatPHP(reservation.deposit_centavos, lang)}`
               )}
             </span>
-          </label>
+          </div>
           <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary">
             {ti("理由 (監査ログに残ります)", "Reason (logged for audit)")}
             <textarea

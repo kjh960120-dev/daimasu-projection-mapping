@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import type { Reservation, PaymentMethod } from "@/lib/db/types";
 import { formatPHP } from "@/lib/domain/reservation";
 import type { AdminLang } from "@/lib/auth/admin-lang";
+import { NumPadInput } from "../../_components/num-pad-input";
 
 const METHODS: {
   value: PaymentMethod;
@@ -84,24 +85,27 @@ export function SettleForm({
         </select>
       </label>
 
-      <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
-        {ti("受領合計 (₱)", "Total received (₱)")}
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          required
+      <div className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
+        <span>{ti("受領合計 (₱)", "Total received (₱)")}</span>
+        <NumPadInput
           value={amountPesos}
-          onChange={(e) => setAmountPesos(e.target.value)}
-          className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
+          onChange={setAmountPesos}
+          label={ti("受領合計を入力", "Enter total received")}
+          subText={ti(
+            `残金 ${formatPHP(reservation.balance_centavos, lang)}`,
+            `Balance ${formatPHP(reservation.balance_centavos, lang)}`
+          )}
+          prefix="₱"
+          allowDecimal
+          placeholder="0"
         />
-        <span className="admin-meta">
+        <span className="admin-meta normal-case tracking-normal">
           {ti(
             "ドリンク等のアップセルもここで合計可能。",
             "Drinks / upsell beyond the course can be added here."
           )}
         </span>
-      </label>
+      </div>
 
       <button
         type="submit"

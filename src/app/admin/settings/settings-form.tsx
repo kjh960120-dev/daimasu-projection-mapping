@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import type { RestaurantSettings } from "@/lib/db/types";
+import { NumPadInput } from "../_components/num-pad-input";
 
 type Lang = "ja" | "en";
 const ti = (lang: Lang, ja: string, en: string) => (lang === "ja" ? ja : en);
@@ -317,18 +318,23 @@ function NumberField({
   help?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">{label}</span>
-      <input
-        type="number"
-        value={value}
-        min={min}
-        max={max}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-gold/60 focus:outline-none"
+      <NumPadInput
+        value={String(value)}
+        onChange={(s) => {
+          let n = parseInt(s, 10);
+          if (Number.isNaN(n)) n = min ?? 0;
+          if (typeof min === "number") n = Math.max(min, n);
+          if (typeof max === "number") n = Math.min(max, n);
+          onChange(n);
+        }}
+        label={label}
+        placeholder="0"
+        maxIntegerDigits={9}
       />
-      {help && <span className="admin-meta">{help}</span>}
-    </label>
+      {help && <span className="admin-meta normal-case tracking-normal">{help}</span>}
+    </div>
   );
 }
 

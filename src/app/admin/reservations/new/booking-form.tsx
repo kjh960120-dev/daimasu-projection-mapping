@@ -6,6 +6,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import type { RestaurantSettings, SeatingSlot } from "@/lib/db/types";
 import { formatPHP } from "@/lib/domain/reservation";
 import type { AdminLang } from "@/lib/auth/admin-lang";
+import { NumPadInput } from "../../_components/num-pad-input";
 
 interface DayCell {
   date: string;
@@ -149,14 +150,17 @@ export function ManualBookingForm({
             </select>
           </Field>
           <Field label={ti("人数", "Party size")}>
-            <input
-              type="number"
-              min={1}
-              max={Math.min(8, settings.online_seats)}
-              value={partySize}
-              onChange={(e) => setPartySize(parseInt(e.target.value, 10) || 1)}
-              className={inputCls}
-              required
+            <NumPadInput
+              value={String(partySize)}
+              onChange={(s) => {
+                const n = parseInt(s, 10) || 1;
+                const cap = Math.min(8, settings.online_seats);
+                setPartySize(Math.min(Math.max(1, n), cap));
+              }}
+              label={ti("人数を入力", "Enter party size")}
+              suffix={ti("名", " pax")}
+              maxIntegerDigits={1}
+              placeholder="1"
             />
             <span className="admin-meta">
               {ti(
