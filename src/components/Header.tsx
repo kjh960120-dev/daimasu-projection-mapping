@@ -65,21 +65,9 @@ export default function Header() {
       }`}
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
-        <div className="flex h-20 items-center justify-between">
-          <a href="#top" className="relative z-[60] block" aria-label="DAIMASU — Back to top">
-            {/* eslint-disable-next-line @next/next/no-img-element -- static export, small brand mark */}
-            <img
-              src="/logo.png"
-              alt="DAIMASU Japanese Bar"
-              width={232}
-              height={200}
-              loading="eager"
-              decoding="sync"
-              className="h-12 w-auto sm:h-14"
-            />
-          </a>
-
-          <nav className="hidden items-center gap-10 md:flex">
+        <div className="relative flex h-24 items-center sm:h-28">
+          {/* Left: nav (desktop) */}
+          <nav className="hidden items-center gap-8 md:flex lg:gap-10">
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.href}
@@ -91,7 +79,26 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-6 md:flex">
+          {/* Center: logo */}
+          <a
+            href="#top"
+            className="absolute left-1/2 top-1/2 z-[60] block -translate-x-1/2 -translate-y-1/2"
+            aria-label="DAIMASU — Back to top"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- static export, brand mark */}
+            <img
+              src="/logo.png"
+              alt="DAIMASU Japanese Bar"
+              width={232}
+              height={200}
+              loading="eager"
+              decoding="sync"
+              className="h-20 w-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)] sm:h-24"
+            />
+          </a>
+
+          {/* Right: lang + CTA (desktop) */}
+          <div className="ml-auto hidden items-center gap-6 md:flex">
             <button
               onClick={() => setLang(lang === "ja" ? "en" : "ja")}
               className="text-xs tracking-wider text-text-muted transition-colors hover:text-foreground"
@@ -108,10 +115,11 @@ export default function Header() {
             </a>
           </div>
 
+          {/* Mobile hamburger (right) */}
           <button
             ref={toggleRef}
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="relative z-[60] inline-flex min-h-[44px] min-w-[44px] items-center justify-center -m-2 p-2 text-foreground md:hidden"
+            className="relative z-[60] ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center -m-2 p-2 text-foreground md:hidden"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
           >
@@ -131,7 +139,7 @@ export default function Header() {
             className="fixed inset-0 z-40 flex flex-col bg-background/98 backdrop-blur-lg md:hidden"
           >
             {/* Header spacer — keeps logo + X legible against overlay */}
-            <div className="h-20 shrink-0" />
+            <div className="h-24 shrink-0 sm:h-28" />
 
             {/* Top ornate divider */}
             <motion.div
