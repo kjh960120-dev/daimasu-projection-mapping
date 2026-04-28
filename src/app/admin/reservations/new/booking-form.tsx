@@ -38,7 +38,8 @@ export function ManualBookingForm({
 
   const [date, setDate] = useState(defaultDate ?? grid[0]?.date ?? "");
   const [seating, setSeating] = useState<SeatingSlot>(defaultSeating ?? "s1");
-  const [partySize, setPartySize] = useState(2);
+  // Default 0 = "not yet entered" — operator types directly into NumPad.
+  const [partySize, setPartySize] = useState(0);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+63 ");
   const [email, setEmail] = useState("");
@@ -220,12 +221,13 @@ export function ManualBookingForm({
             <NumPadInput
               value={String(partySize)}
               onChange={(s) => {
-                // Cap to online_seats (8); allow values that exceed
-                // seatRemaining so the operator sees the slot-full
-                // warning instead of being silently corrected.
-                const n = parseInt(s, 10) || 1;
+                // Cap to online_seats (8); allow 0 (= unset) and let the
+                // submit button's disabled state guard against zero. The
+                // over-capacity warning fires when typed > seatRemaining.
+                const raw = s === "" ? 0 : parseInt(s, 10);
+                const n = Number.isNaN(raw) ? 0 : raw;
                 const cap = Math.min(20, settings.online_seats);
-                setPartySize(Math.min(Math.max(1, n), cap));
+                setPartySize(Math.min(Math.max(0, n), cap));
               }}
               label={ti("人数を入力", "Enter party size")}
               subText={
@@ -241,13 +243,20 @@ export function ManualBookingForm({
               }
               suffix={ti("名", " pax")}
               maxIntegerDigits={1}
-              placeholder="1"
+              placeholder={ti("人数を入力", "Enter party size")}
             />
             {seatRemaining === 0 ? (
               <span className="border border-red-500/60 bg-red-500/[0.10] px-3 py-1.5 text-[12px] font-bold uppercase tracking-[0.10em] text-red-400">
                 {ti(
                   "満席です。別の日時を選んでください。",
                   "FULL — pick another slot."
+                )}
+              </span>
+            ) : partySize === 0 ? (
+              <span className="text-[12px] font-medium text-text-secondary">
+                {ti(
+                  `人数を入力してください (この時間帯は ${seatRemaining} 名分まで)`,
+                  `Enter party size (up to ${seatRemaining} for this slot)`
                 )}
               </span>
             ) : partySize > seatRemaining ? (
@@ -531,6 +540,7 @@ export function ManualBookingForm({
           disabled={
             status === "pending" ||
             dateClosed ||
+            partySize < 1 ||
             partySize > seatRemaining ||
             (seatMode === "manual" && !manualPickValid)
           }

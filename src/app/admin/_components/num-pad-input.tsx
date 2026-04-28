@@ -61,6 +61,10 @@ export function NumPadInput({
 }: NumPadInputProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value || "");
+  // After every open(), the first key press replaces the draft instead
+  // of appending. Mirrors iOS Calculator behavior: starting a new entry
+  // shouldn't require pressing ⌫ to clear the previous value first.
+  const [freshStart, setFreshStart] = useState(false);
   // SSR-safe portal flag without setState-in-effect.
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -70,34 +74,48 @@ export function NumPadInput({
 
   function openModal() {
     setDraft(value || "");
+    setFreshStart(true);
     setOpen(true);
   }
 
   const append = useCallback(
     (digit: string) => {
       setDraft((prev) => {
+        // Fresh-start: first key press after open clears the prior value.
+        const base = freshStart ? "" : prev;
         if (digit === ".") {
           if (!allowDecimal) return prev;
-          if (prev.includes(".")) return prev;
-          return prev === "" ? "0." : prev + ".";
+          if (base.includes(".")) return prev;
+          return base === "" ? "0." : base + ".";
         }
         if (digit === "00") {
-          if (prev === "" || prev === "0") return "0";
-          const intPart = prev.split(".")[0] ?? "";
+          if (base === "" || base === "0") return "0";
+          const intPart = base.split(".")[0] ?? "";
           if (intPart.length + 2 > maxIntegerDigits) return prev;
-          return prev + "00";
+          return base + "00";
         }
         // single digit
-        if (prev === "0") return digit;
-        const intPart = prev.split(".")[0] ?? "";
-        if (intPart.length >= maxIntegerDigits && !prev.includes(".")) return prev;
-        return prev + digit;
+        if (base === "0") return digit;
+        const intPart = base.split(".")[0] ?? "";
+        if (intPart.length >= maxIntegerDigits && !base.includes(".")) {
+          // Hit the digit cap: replace the last digit instead of refusing
+          // the press. With maxIntegerDigits=1 (party size) this means
+          // "2 → tap 5" yields 5 rather than getting stuck at 2.
+          if (intPart.length === maxIntegerDigits) {
+            const decPart = base.includes(".") ? "." + base.split(".")[1] : "";
+            return digit + decPart;
+          }
+          return prev;
+        }
+        return base + digit;
       });
+      if (freshStart) setFreshStart(false);
     },
-    [allowDecimal, maxIntegerDigits]
+    [allowDecimal, maxIntegerDigits, freshStart]
   );
 
   const backspace = useCallback(() => {
+    setFreshStart(false);
     setDraft((prev) => {
       const next = prev.slice(0, -1);
       return next;
@@ -105,6 +123,7 @@ export function NumPadInput({
   }, []);
 
   const clear = useCallback(() => {
+    setFreshStart(false);
     setDraft("");
   }, []);
 
