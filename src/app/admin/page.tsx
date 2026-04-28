@@ -43,6 +43,7 @@ import {
 import type { NotificationLog } from "@/lib/db/types";
 import { QuickTiles } from "./_components/quick-tiles";
 import { CapacityBar } from "./_components/capacity-bar";
+import { CounterSeatMap } from "./_components/counter-seat-map";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -282,18 +283,28 @@ export default async function AdminDashboardPage() {
         </h2>
         <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
           <div className="flex flex-col gap-5 border border-border bg-surface p-5">
-            <CapacityBar
-              label={`17:30 ${ti(lang, "1部", "Seating 1")}`}
-              taken={paxAt(todayList, "s1")}
-              total={onlineSeats}
-              lang={lang}
-            />
-            <CapacityBar
-              label={`19:30 ${ti(lang, "2部", "Seating 2")}`}
-              taken={paxAt(todayList, "s2")}
-              total={onlineSeats}
-              lang={lang}
-            />
+            <div>
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
+                17:30 {ti(lang, "1部", "Seating 1")}
+              </p>
+              <CounterSeatMap
+                totalSeats={onlineSeats}
+                bookings={todayList.filter((r) => r.seating === "s1")}
+                lang={lang}
+                compact
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
+                19:30 {ti(lang, "2部", "Seating 2")}
+              </p>
+              <CounterSeatMap
+                totalSeats={onlineSeats}
+                bookings={todayList.filter((r) => r.seating === "s2")}
+                lang={lang}
+                compact
+              />
+            </div>
             <p className="mt-1 admin-caption">
               {ti(
                 lang,

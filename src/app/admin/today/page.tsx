@@ -16,6 +16,7 @@ import { adminClient } from "@/lib/db/clients";
 import type { Reservation, RestaurantSettings } from "@/lib/db/types";
 import { mockSettings, mockReservations } from "../preview-mode";
 import { PrintButton } from "./print-button";
+import { CounterSeatMap } from "../_components/counter-seat-map";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -178,20 +179,29 @@ export default async function TodayServiceSheetPage({
           </div>
         </header>
 
-        {/* Capacity strip — what remains in each seating, for fast triage */}
-        <div className="mb-6 grid grid-cols-2 gap-3 border-b border-border pb-5 print:hidden">
-          <CapacityRow
-            slotLabel={`${settings.seating_1_label} · ${ti(lang, "1部", "Seating 1")}`}
-            taken={s1.reduce((sum, b) => sum + b.party_size, 0)}
-            total={settings.online_seats}
-            lang={lang}
-          />
-          <CapacityRow
-            slotLabel={`${settings.seating_2_label} · ${ti(lang, "2部", "Seating 2")}`}
-            taken={s2.reduce((sum, b) => sum + b.party_size, 0)}
-            total={settings.online_seats}
-            lang={lang}
-          />
+        {/* Counter seat map — airline-style per-seat status. Operator's
+            first read on arrival: which seats are sold, where's room. */}
+        <div className="mb-8 grid gap-5 border-b border-border pb-6 lg:grid-cols-2 print:grid-cols-2 print:gap-3">
+          <div>
+            <p className="mb-3 text-[12px] font-medium uppercase tracking-[0.16em] text-text-secondary print:text-black/70">
+              {settings.seating_1_label} · {ti(lang, "1部", "Seating 1")}
+            </p>
+            <CounterSeatMap
+              totalSeats={settings.online_seats}
+              bookings={s1}
+              lang={lang}
+            />
+          </div>
+          <div>
+            <p className="mb-3 text-[12px] font-medium uppercase tracking-[0.16em] text-text-secondary print:text-black/70">
+              {settings.seating_2_label} · {ti(lang, "2部", "Seating 2")}
+            </p>
+            <CounterSeatMap
+              totalSeats={settings.online_seats}
+              bookings={s2}
+              lang={lang}
+            />
+          </div>
         </div>
 
         <SeatingBlock
@@ -218,66 +228,6 @@ export default async function TodayServiceSheetPage({
           )}
         </footer>
       </article>
-    </div>
-  );
-}
-
-function CapacityRow({
-  slotLabel,
-  taken,
-  total,
-  lang,
-}: {
-  slotLabel: string;
-  taken: number;
-  total: number;
-  lang: AdminLang;
-}) {
-  const remaining = Math.max(0, total - taken);
-  const isFull = remaining === 0;
-  const isLastFew = !isFull && remaining <= 1;
-  return (
-    <div
-      className={
-        isFull
-          ? "flex items-center justify-between border border-red-500/60 bg-red-500/15 px-4 py-3"
-          : isLastFew
-            ? "flex items-center justify-between border border-amber-500/60 bg-amber-500/10 px-4 py-3"
-            : "flex items-center justify-between border border-border bg-card px-4 py-3"
-      }
-    >
-      <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
-          {slotLabel}
-        </p>
-        <p className="mt-0.5 admin-meta">
-          {taken}/{total}
-          <span className="ml-2">
-            {ti(lang, `合計 ${total} 席`, `of ${total}`)}
-          </span>
-        </p>
-      </div>
-      <div className="text-right">
-        {isFull ? (
-          <span className="font-mono text-xl font-bold uppercase tracking-[0.10em] text-red-400">
-            {ti(lang, "満席", "FULL")}
-          </span>
-        ) : isLastFew ? (
-          <span className="font-mono text-base font-bold uppercase tracking-[0.08em] text-amber-400">
-            {ti(lang, `あと 1 席`, "1 LEFT")}
-          </span>
-        ) : (
-          <span className="font-mono admin-num text-2xl font-semibold text-foreground">
-            <span className="text-[12px] font-normal text-text-secondary">
-              {ti(lang, "残 ", "")}
-            </span>
-            {remaining}
-            <span className="ml-0.5 text-[12px] font-normal text-text-secondary">
-              {ti(lang, " 席", " left")}
-            </span>
-          </span>
-        )}
-      </div>
     </div>
   );
 }
