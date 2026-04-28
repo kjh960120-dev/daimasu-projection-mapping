@@ -65,7 +65,7 @@ export default function Header() {
       }`}
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
-        <div className="relative flex h-24 items-center sm:h-28">
+        <div className="relative flex h-32 items-center sm:h-28">
           {/* Left: nav (desktop) */}
           <nav className="hidden items-center gap-8 md:flex lg:gap-10">
             {NAV_ITEMS.map((item) => (
@@ -93,7 +93,7 @@ export default function Header() {
               height={200}
               loading="eager"
               decoding="sync"
-              className="h-20 w-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)] sm:h-24"
+              className="h-28 w-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)] sm:h-24"
             />
           </a>
 
@@ -139,7 +139,7 @@ export default function Header() {
             className="fixed inset-0 z-40 flex flex-col bg-background/98 backdrop-blur-lg md:hidden"
           >
             {/* Header spacer — keeps logo + X legible against overlay */}
-            <div className="h-24 shrink-0 sm:h-28" />
+            <div className="h-32 shrink-0 sm:h-28" />
 
             {/* Top ornate divider */}
             <motion.div
