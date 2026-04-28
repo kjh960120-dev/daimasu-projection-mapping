@@ -42,6 +42,7 @@ import {
 } from "./preview-mode";
 import type { NotificationLog } from "@/lib/db/types";
 import { QuickTiles } from "./_components/quick-tiles";
+import { CapacityBar } from "./_components/capacity-bar";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -280,18 +281,20 @@ export default async function AdminDashboardPage() {
           {ti(lang, "今日", "Today")}
         </h2>
         <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
-          <div className="flex flex-col gap-4 border border-border bg-surface p-5">
-            <SeatBar
+          <div className="flex flex-col gap-5 border border-border bg-surface p-5">
+            <CapacityBar
               label={`17:30 ${ti(lang, "1部", "Seating 1")}`}
               taken={paxAt(todayList, "s1")}
               total={onlineSeats}
+              lang={lang}
             />
-            <SeatBar
+            <CapacityBar
               label={`19:30 ${ti(lang, "2部", "Seating 2")}`}
               taken={paxAt(todayList, "s2")}
               total={onlineSeats}
+              lang={lang}
             />
-            <p className="mt-2 admin-caption">
+            <p className="mt-1 admin-caption">
               {ti(
                 lang,
                 `合計 ${todayList.length}件 / ${todayList.reduce((s, r) => s + r.party_size, 0)}名`,
@@ -480,42 +483,6 @@ function ActionItem({
   );
 }
 
-function SeatBar({
-  label,
-  taken,
-  total,
-}: {
-  label: string;
-  taken: number;
-  total: number;
-}) {
-  const pct = total > 0 ? Math.min(100, (taken / total) * 100) : 0;
-  const full = pct >= 100;
-  return (
-    <div>
-      <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-[12px] uppercase tracking-[0.12em] text-text-secondary">{label}</span>
-        <span className="font-mono admin-num text-[13px] font-medium text-foreground">
-          {taken}/{total}
-        </span>
-      </div>
-      <div className="h-1.5 w-full bg-background/60">
-        <div
-          className={
-            full
-              ? "h-full bg-red-500/70"
-              : pct > 75
-                ? "h-full bg-amber-500/70"
-                : "h-full bg-gold/70"
-          }
-          style={{ width: `${pct}%` }}
-          aria-hidden="true"
-        />
-      </div>
-    </div>
-  );
-}
-
 function ReservationsTable({
   list,
   lang,
@@ -669,9 +636,9 @@ function DayCard({
   return (
     <div className="border border-border bg-surface p-4">
       <p className="admin-section-label mb-4">{dateLabel}</p>
-      <div className="grid grid-cols-2 gap-3 text-[13px]">
-        <SeatBar label="17:30" taken={s1} total={onlineSeats} />
-        <SeatBar label="19:30" taken={s2} total={onlineSeats} />
+      <div className="grid grid-cols-2 gap-3">
+        <CapacityBar label="17:30" taken={s1} total={onlineSeats} lang={lang} compact />
+        <CapacityBar label="19:30" taken={s2} total={onlineSeats} lang={lang} compact />
       </div>
       <p className="mt-4 admin-caption">
         {list.length === 0

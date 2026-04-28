@@ -86,11 +86,16 @@ export function SettingsForm({
           onChange={(v) => update("reservations_open", v)}
         />
         <NumberField
-          label={ti(lang, "総席数", "Total seats")}
+          label={ti(lang, "総席数 (カウンター物理席)", "Total seats (physical)")}
           value={s.total_seats}
           onChange={(v) => update("total_seats", v)}
           min={1}
           max={20}
+          help={ti(
+            lang,
+            "店舗の実席数。各時間帯 (1部・2部) の最大収容。",
+            "Physical capacity of the bar. Max guests per seating (S1/S2)."
+          )}
         />
         <NumberField
           label={ti(lang, "オンライン予約可能席数", "Online-bookable seats")}
@@ -98,7 +103,11 @@ export function SettingsForm({
           onChange={(v) => update("online_seats", v)}
           min={0}
           max={s.total_seats}
-          help={ti(lang, "ウォークイン枠 = 総席数 − オンライン枠", "Walk-in budget = total − online.")}
+          help={ti(
+            lang,
+            `Webから予約できる席数。ダッシュボードの「残席」「満席」表示はこの値に基づきます。ウォークイン枠 = ${s.total_seats} − ${s.online_seats} = ${s.total_seats - s.online_seats} 席。`,
+            `Seats bookable via the website. Dashboard "remaining" / "FULL" use this value. Walk-in budget = ${s.total_seats} − ${s.online_seats} = ${s.total_seats - s.online_seats} seats.`
+          )}
         />
         <NumberField
           label={ti(lang, "1部の所要時間 (分)", "Service minutes")}

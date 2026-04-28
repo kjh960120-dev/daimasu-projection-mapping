@@ -168,12 +168,22 @@ export function ManualBookingForm({
               maxIntegerDigits={1}
               placeholder="1"
             />
-            <span className="admin-meta">
-              {ti(
-                `この時間帯の残り席: ${seatRemaining}`,
-                `Seats remaining this slot: ${seatRemaining}`
-              )}
-            </span>
+            {seatRemaining === 0 ? (
+              <span className="font-mono text-[12px] font-bold uppercase tracking-[0.10em] text-red-400">
+                {ti("この時間帯は満席です", "This slot is FULL")}
+              </span>
+            ) : seatRemaining <= 1 ? (
+              <span className="text-[12px] font-medium text-amber-400">
+                {ti(`残り ${seatRemaining} 席のみ`, `Only ${seatRemaining} seat left`)}
+              </span>
+            ) : (
+              <span className="admin-meta normal-case tracking-normal">
+                {ti(
+                  `この時間帯の残り席: ${seatRemaining}`,
+                  `Seats remaining this slot: ${seatRemaining}`
+                )}
+              </span>
+            )}
           </Field>
           <Field label={ti("経路", "Source")}>
             <select
@@ -272,10 +282,26 @@ export function ManualBookingForm({
         </div>
 
         {dateClosed && (
-          <p className="text-[12px] text-red-400">
+          <p className="border border-red-500/40 bg-red-500/[0.06] px-3 py-2 text-[13px] font-medium text-red-400">
             {ti(
               "選択した日は休業日に設定されています。",
               "Selected date is marked as closed."
+            )}
+          </p>
+        )}
+        {!dateClosed && seatRemaining === 0 && (
+          <p className="border border-red-500/60 bg-red-500/[0.10] px-3 py-2 text-[13px] font-bold uppercase tracking-[0.08em] text-red-400">
+            {ti(
+              "この時間帯は満席です。別の日時を選んでください。",
+              "This slot is FULL. Please pick another date or seating."
+            )}
+          </p>
+        )}
+        {!dateClosed && seatRemaining > 0 && partySize > seatRemaining && (
+          <p className="border border-amber-500/60 bg-amber-500/[0.08] px-3 py-2 text-[13px] font-medium text-amber-400">
+            {ti(
+              `${partySize}名は入りません。残り席: ${seatRemaining}`,
+              `${partySize} guests won't fit. Only ${seatRemaining} seat${seatRemaining > 1 ? "s" : ""} left.`
             )}
           </p>
         )}
@@ -432,6 +458,7 @@ function DateRow({
           if (!cell.closed) onPick(cell.date, "s1");
         }}
         label={ti("1部", "S1")}
+        lang={lang}
       />
       <SlotBadge
         slot="s2"
@@ -445,6 +472,7 @@ function DateRow({
           if (!cell.closed) onPick(cell.date, "s2");
         }}
         label={ti("2部", "S2")}
+        lang={lang}
       />
     </button>
   );
@@ -458,6 +486,7 @@ function SlotBadge({
   active,
   onClick,
   label,
+  lang,
 }: {
   slot: SeatingSlot;
   taken: number;
@@ -467,22 +496,35 @@ function SlotBadge({
   active: boolean;
   onClick: (e: React.MouseEvent) => void;
   label: string;
+  lang: AdminLang;
 }) {
+  const remaining = Math.max(0, total - taken);
+  const ti = (ja: string, en: string) => (lang === "ja" ? ja : en);
   return (
     <span
       onClick={onClick}
       className={
         active
-          ? "inline-flex items-center justify-between border border-gold bg-gold/15 px-2 py-1 text-[11px] font-medium text-gold"
-          : full || closed
-            ? "inline-flex items-center justify-between border border-red-500/40 bg-red-500/5 px-2 py-1 text-[11px] font-medium text-red-400/80"
-            : "inline-flex items-center justify-between border border-border/40 px-2 py-1 text-[11px] font-medium text-foreground"
+          ? "inline-flex items-center justify-between gap-1.5 border border-gold bg-gold/15 px-2 py-1 text-[11px] font-medium text-gold"
+          : closed
+            ? "inline-flex items-center justify-between gap-1.5 border border-border/40 bg-background/40 px-2 py-1 text-[11px] font-medium text-text-muted"
+            : full
+              ? "inline-flex items-center justify-between gap-1.5 border border-red-500/60 bg-red-500/15 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.06em] text-red-400"
+              : remaining <= 1
+                ? "inline-flex items-center justify-between gap-1.5 border border-amber-500/50 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-400"
+                : "inline-flex items-center justify-between gap-1.5 border border-border/40 bg-card px-2 py-1 text-[11px] font-medium text-foreground"
       }
     >
       <span className="font-mono">{label}</span>
-      <span className="font-mono">
-        {taken}/{total}
-      </span>
+      {full ? (
+        <span className="font-mono uppercase tracking-[0.06em]">
+          {ti("満席", "FULL")}
+        </span>
+      ) : (
+        <span className="font-mono admin-num">
+          {taken}/{total}
+        </span>
+      )}
     </span>
   );
 }

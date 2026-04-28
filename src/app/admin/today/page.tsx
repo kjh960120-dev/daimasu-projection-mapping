@@ -178,17 +178,35 @@ export default async function TodayServiceSheetPage({
           </div>
         </header>
 
+        {/* Capacity strip — what remains in each seating, for fast triage */}
+        <div className="mb-6 grid grid-cols-2 gap-3 border-b border-border pb-5 print:hidden">
+          <CapacityRow
+            slotLabel={`${settings.seating_1_label} · ${ti(lang, "1部", "Seating 1")}`}
+            taken={s1.reduce((sum, b) => sum + b.party_size, 0)}
+            total={settings.online_seats}
+            lang={lang}
+          />
+          <CapacityRow
+            slotLabel={`${settings.seating_2_label} · ${ti(lang, "2部", "Seating 2")}`}
+            taken={s2.reduce((sum, b) => sum + b.party_size, 0)}
+            total={settings.online_seats}
+            lang={lang}
+          />
+        </div>
+
         <SeatingBlock
           title={`${settings.seating_1_label} · ${ti(lang, "1部", "Seating 1")}`}
           bookings={s1}
           repeatMap={repeatMap}
           lang={lang}
+          totalSeats={settings.online_seats}
         />
         <SeatingBlock
           title={`${settings.seating_2_label} · ${ti(lang, "2部", "Seating 2")}`}
           bookings={s2}
           repeatMap={repeatMap}
           lang={lang}
+          totalSeats={settings.online_seats}
           className="mt-8"
         />
 
@@ -204,24 +222,109 @@ export default async function TodayServiceSheetPage({
   );
 }
 
+function CapacityRow({
+  slotLabel,
+  taken,
+  total,
+  lang,
+}: {
+  slotLabel: string;
+  taken: number;
+  total: number;
+  lang: AdminLang;
+}) {
+  const remaining = Math.max(0, total - taken);
+  const isFull = remaining === 0;
+  const isLastFew = !isFull && remaining <= 1;
+  return (
+    <div
+      className={
+        isFull
+          ? "flex items-center justify-between border border-red-500/60 bg-red-500/15 px-4 py-3"
+          : isLastFew
+            ? "flex items-center justify-between border border-amber-500/60 bg-amber-500/10 px-4 py-3"
+            : "flex items-center justify-between border border-border bg-card px-4 py-3"
+      }
+    >
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
+          {slotLabel}
+        </p>
+        <p className="mt-0.5 admin-meta">
+          {taken}/{total}
+          <span className="ml-2">
+            {ti(lang, `合計 ${total} 席`, `of ${total}`)}
+          </span>
+        </p>
+      </div>
+      <div className="text-right">
+        {isFull ? (
+          <span className="font-mono text-xl font-bold uppercase tracking-[0.10em] text-red-400">
+            {ti(lang, "満席", "FULL")}
+          </span>
+        ) : isLastFew ? (
+          <span className="font-mono text-base font-bold uppercase tracking-[0.08em] text-amber-400">
+            {ti(lang, `あと 1 席`, "1 LEFT")}
+          </span>
+        ) : (
+          <span className="font-mono admin-num text-2xl font-semibold text-foreground">
+            <span className="text-[12px] font-normal text-text-secondary">
+              {ti(lang, "残 ", "")}
+            </span>
+            {remaining}
+            <span className="ml-0.5 text-[12px] font-normal text-text-secondary">
+              {ti(lang, " 席", " left")}
+            </span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SeatingBlock({
   title,
   bookings,
   repeatMap,
   lang,
+  totalSeats,
   className,
 }: {
   title: string;
   bookings: Reservation[];
   repeatMap: Map<string, number>;
   lang: AdminLang;
+  totalSeats: number;
   className?: string;
 }) {
+  const taken = bookings.reduce((s, b) => s + b.party_size, 0);
+  const remaining = Math.max(0, totalSeats - taken);
+  const isFull = remaining === 0;
   return (
     <section className={className}>
-      <h3 className="mb-3 text-[13px] font-medium uppercase tracking-[0.18em] text-gold print:text-black">
-        {title} · {bookings.length}件 ·{" "}
-        {bookings.reduce((s, b) => s + b.party_size, 0)}名
+      <h3 className="mb-3 flex flex-wrap items-baseline gap-3 text-[13px] font-medium uppercase tracking-[0.18em] text-gold print:text-black">
+        <span>{title}</span>
+        <span className="text-text-secondary print:text-black/70">·</span>
+        <span>
+          {bookings.length}{ti(lang, "件", " bkg")}
+        </span>
+        <span className="text-text-secondary print:text-black/70">·</span>
+        <span>
+          {taken}/{totalSeats}{ti(lang, "名", "")}
+        </span>
+        {isFull ? (
+          <span className="border border-red-500/60 bg-red-500/15 px-2 py-0.5 text-[11px] font-bold tracking-[0.10em] text-red-400 print:border-black print:bg-transparent print:text-black">
+            {ti(lang, "満席", "FULL")}
+          </span>
+        ) : remaining <= 1 ? (
+          <span className="border border-amber-500/60 bg-amber-500/10 px-2 py-0.5 text-[11px] font-bold tracking-[0.10em] text-amber-400 print:border-black print:bg-transparent print:text-black">
+            {ti(lang, `あと ${remaining} 席`, `${remaining} LEFT`)}
+          </span>
+        ) : (
+          <span className="text-text-muted print:text-black/60 normal-case">
+            {ti(lang, `残 ${remaining} 席`, `${remaining} left`)}
+          </span>
+        )}
       </h3>
       {bookings.length === 0 ? (
         <p className="border border-dashed border-border/60 px-3 py-4 text-center admin-caption print:border-black/30 print:text-black/60">
