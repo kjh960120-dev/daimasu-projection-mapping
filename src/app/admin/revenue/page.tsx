@@ -96,7 +96,12 @@ export default async function RevenuePage({
 
   // Totals
   const totalNet = allDays.reduce((s, d) => s + d.net_completed_centavos, 0);
+  const totalGross = allDays.reduce(
+    (s, d) => s + d.gross_booked_centavos,
+    0
+  );
   const totalCovers = allDays.reduce((s, d) => s + d.covers_booked, 0);
+  const totalCancel = allDays.reduce((s, d) => s + d.cancel_count, 0);
   const totalNoShow = allDays.reduce((s, d) => s + d.no_show_count, 0);
   const totalKept = allDays.reduce(
     (s, d) => s + d.no_show_deposit_kept_centavos,
@@ -104,6 +109,20 @@ export default async function RevenuePage({
   );
   const totalLost = allDays.reduce((s, d) => s + d.no_show_lost_centavos, 0);
   const totalCheck = totalCovers > 0 ? Math.floor(totalNet / totalCovers) : 0;
+  // Cancellation rate: cancels / (cancels + bookings) * 100. Confirmed +
+  // completed + no-show count as "kept" bookings (covers_booked already
+  // excludes cancellations per the SQL view).
+  const totalAttempts = totalCovers + totalCancel;
+  const cancelRatePct =
+    totalAttempts > 0
+      ? Math.round((totalCancel / totalAttempts) * 1000) / 10
+      : 0;
+  const cancelHigh = cancelRatePct >= 15;
+  // No-show rate: no_show / eligible (covers_booked) * 100.
+  const noShowRatePct =
+    totalCovers > 0
+      ? Math.round((totalNoShow / totalCovers) * 1000) / 10
+      : 0;
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -114,29 +133,82 @@ export default async function RevenuePage({
         <MonthPicker year={targetY} month={targetM} lang={lang} />
       </div>
 
-      {/* Month totals */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Revenue stats — first row */}
+      <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat
           label={ti(lang, "純売上 (月)", "Net rev")}
           value={formatPHP(totalNet, lang)}
           accent
+          sub={ti(
+            lang,
+            "確定済みで実際に受領した金額",
+            "Actually received"
+          )}
         />
         <Stat
-          label={ti(lang, "予約数 (月)", "Covers")}
+          label={ti(lang, "予想売上 (月)", "Expected rev")}
+          value={formatPHP(totalGross, lang)}
+          sub={ti(
+            lang,
+            "確定済み予約の総額 (no-show含む)",
+            "Confirmed bookings (incl. no-show)"
+          )}
+        />
+        <Stat
+          label={ti(lang, "予約件数 (月)", "Bookings")}
           value={String(totalCovers)}
+          sub={ti(
+            lang,
+            `+ キャンセル ${totalCancel}件`,
+            `+ ${totalCancel} cancels`
+          )}
         />
         <Stat
           label={ti(lang, "客単価 (月)", "Avg check")}
           value={totalCovers > 0 ? formatPHP(totalCheck, lang) : "—"}
+          sub={ti(lang, "純売上 ÷ 予約件数", "Net ÷ bookings")}
         />
+      </div>
+
+      {/* Issue stats — second row */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat
-          label={ti(lang, "no-show件数", "No-shows")}
-          value={String(totalNoShow)}
-          warn={totalNoShow > 0}
+          label={ti(lang, "キャンセル率", "Cancel rate")}
+          value={`${cancelRatePct}%`}
+          warn={cancelHigh}
           sub={ti(
             lang,
-            `保留${formatPHP(totalKept, lang)} / 失効${formatPHP(totalLost, lang)}`,
-            `kept ${formatPHP(totalKept, lang)} / lost ${formatPHP(totalLost, lang)}`
+            `${totalCancel} / ${totalAttempts}件`,
+            `${totalCancel} / ${totalAttempts}`
+          )}
+        />
+        <Stat
+          label={ti(lang, "no-show率", "No-show rate")}
+          value={`${noShowRatePct}%`}
+          warn={noShowRatePct > 5}
+          sub={ti(
+            lang,
+            `${totalNoShow} / ${totalCovers}件`,
+            `${totalNoShow} / ${totalCovers}`
+          )}
+        />
+        <Stat
+          label={ti(lang, "保留売上", "Kept (no-show deposit)")}
+          value={formatPHP(totalKept, lang)}
+          sub={ti(
+            lang,
+            "no-show時にデポジット保留",
+            "Deposits retained on no-show"
+          )}
+        />
+        <Stat
+          label={ti(lang, "失った売上", "Lost (no-show balance)")}
+          value={formatPHP(totalLost, lang)}
+          warn={totalLost > 0}
+          sub={ti(
+            lang,
+            "no-show時の残金未回収",
+            "Balance forfeited"
           )}
         />
       </div>
@@ -161,10 +233,16 @@ export default async function RevenuePage({
             <thead className="border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
               <tr>
                 <th className="px-3 py-3 text-left">{ti(lang, "日付", "Date")}</th>
-                <th className="px-3 py-3 text-right">{ti(lang, "予約", "Covers")}</th>
+                <th className="px-3 py-3 text-right">{ti(lang, "件数", "Bkgs")}</th>
+                <th className="hidden px-3 py-3 text-right md:table-cell">
+                  {ti(lang, "予想売上", "Expected")}
+                </th>
                 <th className="px-3 py-3 text-right">{ti(lang, "純売上", "Net")}</th>
                 <th className="hidden px-3 py-3 text-right md:table-cell">
                   {ti(lang, "客単価", "Avg check")}
+                </th>
+                <th className="px-3 py-3 text-right">
+                  {ti(lang, "Cx", "Cx")}
                 </th>
                 <th className="px-3 py-3 text-right">
                   {ti(lang, "No-show", "No-show")}
@@ -199,6 +277,11 @@ export default async function RevenuePage({
                     <td className="px-3 py-2.5 text-right font-mono admin-num">
                       {d.covers_booked > 0 ? d.covers_booked : <span className="text-text-muted">—</span>}
                     </td>
+                    <td className="hidden px-3 py-2.5 text-right font-mono admin-num text-text-secondary md:table-cell">
+                      {d.gross_booked_centavos > 0
+                        ? formatPHP(d.gross_booked_centavos, lang)
+                        : <span className="text-text-muted">—</span>}
+                    </td>
                     <td className="px-3 py-2.5 text-right font-mono admin-num text-foreground">
                       {d.net_completed_centavos > 0
                         ? formatPHP(d.net_completed_centavos, lang)
@@ -208,6 +291,13 @@ export default async function RevenuePage({
                       {d.avg_check_centavos > 0
                         ? formatPHP(d.avg_check_centavos, lang)
                         : "—"}
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      {d.cancel_count > 0 ? (
+                        <span className="font-mono admin-num text-amber-400">{d.cancel_count}</span>
+                      ) : (
+                        <span className="text-text-muted">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       {d.no_show_count > 0 ? (
@@ -246,11 +336,17 @@ export default async function RevenuePage({
                 <td className="px-3 py-3 text-right font-mono admin-num font-semibold">
                   {totalCovers}
                 </td>
+                <td className="hidden px-3 py-3 text-right font-mono admin-num text-text-secondary md:table-cell">
+                  {totalGross > 0 ? formatPHP(totalGross, lang) : "—"}
+                </td>
                 <td className="px-3 py-3 text-right font-mono admin-num font-semibold text-gold">
                   {formatPHP(totalNet, lang)}
                 </td>
                 <td className="hidden px-3 py-3 text-right font-mono admin-num md:table-cell">
                   {totalCheck > 0 ? formatPHP(totalCheck, lang) : "—"}
+                </td>
+                <td className="px-3 py-3 text-right font-mono admin-num text-amber-400">
+                  {totalCancel}
                 </td>
                 <td className="px-3 py-3 text-right font-mono admin-num text-red-400">
                   {totalNoShow}
