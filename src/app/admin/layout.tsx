@@ -33,10 +33,10 @@ export default async function AdminLayout({
           {/* Mobile top bar */}
           <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur lg:hidden print:hidden">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.32em] text-gold/70">
+              <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-gold">
                 DAIMASU
               </p>
-              <p className="text-[10px] tracking-[0.16em] text-text-secondary">
+              <p className="text-[11px] tracking-[0.12em] text-text-secondary">
                 {ti(lang, "管理画面", "ADMIN PANEL")}
               </p>
             </div>
@@ -44,7 +44,7 @@ export default async function AdminLayout({
           </header>
 
           {/* Mobile horizontal nav scroller */}
-          <nav className="flex gap-1 overflow-x-auto border-b border-border bg-surface/40 px-2 py-2 text-[12px] lg:hidden print:hidden">
+          <nav className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-2 py-2 text-[13px] lg:hidden print:hidden">
             <MobileNavLink href="/admin" icon={<LayoutDashboard size={14} />}>
               {ti(lang, "ホーム", "Home")}
             </MobileNavLink>
@@ -66,12 +66,12 @@ export default async function AdminLayout({
           </nav>
 
           {/* Desktop sidebar */}
-          <aside className="hidden flex-col border-r border-border bg-surface/40 p-5 lg:flex print:hidden">
+          <aside className="hidden flex-col border-r border-border bg-surface p-5 lg:flex print:hidden">
             <div className="mb-6 border-b border-border pb-4">
-              <p className="text-[10px] uppercase tracking-[0.32em] text-gold/70">
+              <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-gold">
                 DAIMASU
               </p>
-              <p className="mt-1 text-xs tracking-[0.16em] text-text-secondary">
+              <p className="mt-1 text-[12px] tracking-[0.12em] text-text-secondary">
                 {ti(lang, "管理画面", "ADMIN PANEL")}
               </p>
             </div>
@@ -98,15 +98,15 @@ export default async function AdminLayout({
                 {ti(lang, "設定", "Settings")}
               </NavLink>
             </nav>
-            <div className="mt-auto flex flex-col gap-3 border-t border-border pt-4 text-xs">
-              <p className="truncate text-text-muted" title={admin.email}>
+            <div className="mt-auto flex flex-col gap-3 border-t border-border pt-4 text-[12px]">
+              <p className="truncate text-text-secondary" title={admin.email}>
                 {admin.email}
               </p>
               <LangToggle current={lang} />
               <form action="/admin/logout" method="post">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 text-text-muted transition-colors hover:text-foreground"
+                  className="flex items-center gap-2 text-text-secondary transition-colors hover:text-foreground"
                 >
                   <LogOut size={14} />
                   {ti(lang, "ログアウト", "Sign out")}
@@ -135,10 +135,10 @@ function NavLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-2.5 py-2 text-text-secondary transition-colors hover:bg-surface hover:text-foreground"
+      className="flex items-center gap-3 px-2.5 py-2.5 text-[14px] text-text-secondary transition-colors hover:bg-card hover:text-foreground"
     >
-      <span className="text-gold/70">{icon}</span>
-      <span className="tracking-wider">{children}</span>
+      <span className="text-gold">{icon}</span>
+      <span>{children}</span>
     </Link>
   );
 }
@@ -155,10 +155,10 @@ function MobileNavLink({
   return (
     <Link
       href={href}
-      className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border border-border/40 bg-background/40 px-3 py-1.5 text-text-secondary hover:border-gold/40 hover:text-foreground"
+      className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border border-border bg-background px-3 py-2 text-text-secondary hover:border-gold/50 hover:text-foreground"
     >
-      <span className="text-gold/70">{icon}</span>
-      <span className="tracking-wider">{children}</span>
+      <span className="text-gold">{icon}</span>
+      <span>{children}</span>
     </Link>
   );
 }

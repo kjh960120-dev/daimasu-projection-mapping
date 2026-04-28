@@ -85,12 +85,12 @@ export function ClosedDatesManager({
     <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
       <form
         onSubmit={add}
-        className="flex h-fit flex-col gap-3 border border-border bg-surface/40 p-5"
+        className="flex h-fit flex-col gap-3 border border-border bg-surface p-5"
       >
-        <p className="text-[10px] uppercase tracking-[0.18em] text-gold/70">
+        <p className="admin-section-label">
           {ti("休業日を追加", "Add a closed date")}
         </p>
-        <label className="flex flex-col gap-1.5 text-[10px] uppercase tracking-[0.14em] text-text-muted">
+        <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
           {ti("日付", "Date")}
           <input
             type="date"
@@ -101,7 +101,7 @@ export function ClosedDatesManager({
             className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-[10px] uppercase tracking-[0.14em] text-text-muted">
+        <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
           {ti("理由 (内部用・任意)", "Reason (internal, optional)")}
           <input
             type="text"
@@ -118,7 +118,7 @@ export function ClosedDatesManager({
         <button
           type="submit"
           disabled={pending || !date}
-          className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-4 py-2 text-[12px] font-medium tracking-[0.14em] disabled:opacity-50"
+          className="btn-gold-ornate inline-flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-medium tracking-[0.10em] disabled:opacity-50"
         >
           {pending ? (
             <Loader2 className="animate-spin" size={13} aria-hidden="true" />
@@ -127,11 +127,11 @@ export function ClosedDatesManager({
           )}
           {ti("追加", "Add")}
         </button>
-        {error && <p className="text-[11px] text-red-400">{error}</p>}
+        {error && <p className="admin-caption text-red-400">{error}</p>}
       </form>
 
-      <div className="border border-border bg-surface/40">
-        <header className="border-b border-border px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-gold/70">
+      <div className="border border-border bg-surface">
+        <header className="border-b border-border px-4 py-3 admin-section-label">
           {ti("登録済み (今日以降)", "Upcoming closed dates")} · {rows.length}
         </header>
         {rows.length === 0 ? (
@@ -145,10 +145,10 @@ export function ClosedDatesManager({
                 key={r.closed_date}
                 className="grid grid-cols-[120px_1fr_auto] items-center gap-4 px-4 py-3"
               >
-                <span className="font-mono text-[13px] text-foreground">
+                <span className="font-mono admin-num admin-body">
                   {r.closed_date}
                 </span>
-                <span className="text-[13px] text-text-secondary">
+                <span className="admin-body text-text-secondary">
                   {r.reason ?? <span className="text-text-muted">—</span>}
                 </span>
                 <button

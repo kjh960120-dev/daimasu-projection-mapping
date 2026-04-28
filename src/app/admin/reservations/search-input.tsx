@@ -32,15 +32,15 @@ export function ReservationSearch({
         e.preventDefault();
         submit(value.trim());
       }}
-      className="flex flex-1 items-center gap-2 border border-border bg-background/50 px-3 py-1.5 focus-within:border-gold/60 sm:max-w-md"
+      className="flex flex-1 items-center gap-2 border border-border bg-background px-3 py-2 focus-within:border-gold/60 sm:max-w-md"
     >
-      <Search size={14} className="text-text-muted" aria-hidden="true" />
+      <Search size={15} className="text-text-secondary" aria-hidden="true" />
       <input
         type="search"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 bg-transparent text-[13px] text-foreground placeholder:text-text-muted focus:outline-none"
+        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-text-muted focus:outline-none"
       />
       {value && (
         <button
@@ -55,7 +55,7 @@ export function ReservationSearch({
           <X size={14} />
         </button>
       )}
-      <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted/60">
+      <span className="text-[11px] uppercase tracking-[0.12em] text-text-muted">
         {pending ? "..." : "↵"}
       </span>
     </form>

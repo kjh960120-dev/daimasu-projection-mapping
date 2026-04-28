@@ -15,11 +15,11 @@ export function LangToggle({ current }: { current: AdminLang }) {
     <button
       type="button"
       onClick={flip}
-      className="flex items-center gap-2 text-text-muted transition-colors hover:text-foreground"
+      className="flex items-center gap-2 text-text-secondary transition-colors hover:text-foreground"
       aria-label={current === "ja" ? "Switch to English" : "日本語に切替"}
     >
       <Languages size={14} />
-      <span className="font-mono text-[11px] tracking-[0.18em]">
+      <span className="font-mono text-[12px] font-medium tracking-[0.16em]">
         {current === "ja" ? "EN" : "日本語"}
       </span>
     </button>

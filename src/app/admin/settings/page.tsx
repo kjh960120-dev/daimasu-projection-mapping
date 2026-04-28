@@ -32,7 +32,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="px-6 py-6 sm:px-8">
-      <h1 className="mb-6 font-[family-name:var(--font-noto-serif)] text-xl tracking-[0.04em] text-foreground">
+      <h1 className="mb-6 font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.02em] text-foreground">
         {ti(lang, "設定", "Settings")}
       </h1>
       {settings ? (

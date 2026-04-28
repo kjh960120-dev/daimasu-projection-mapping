@@ -183,19 +183,19 @@ export default async function AdminDashboardPage() {
   const noShowOver = noShowPct > 5;
 
   return (
-    <div className="px-6 py-6 sm:px-8">
+    <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-[family-name:var(--font-noto-serif)] text-xl tracking-[0.04em] text-foreground">
+          <h1 className="font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.02em] text-foreground">
             {ti(lang, "ダッシュボード", "Dashboard")}
           </h1>
-          <p className="mt-0.5 text-[11px] tracking-[0.06em] text-text-muted">
+          <p className="mt-1 admin-caption">
             {formatToday(lang)}
           </p>
         </div>
         <Link
           href="/admin/reservations"
-          className="text-[11px] uppercase tracking-[0.18em] text-gold/70 hover:text-gold"
+          className="admin-section-label hover:text-gold"
         >
           {ti(lang, "予約一覧へ →", "All reservations →")}
         </Link>
@@ -236,12 +236,12 @@ export default async function AdminDashboardPage() {
 
       {/* ── Action queue ─────────────────────────────────────────────────── */}
       {(unsettledPast?.length || reminderDue.length || systemNoShows.length || (recentFailures && recentFailures.length > 0)) ? (
-        <section className="mb-8 border border-amber-500/30 bg-amber-500/[0.04] p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-amber-400">
-            <AlertTriangle size={13} />
+        <section className="mb-8 border border-amber-500/40 bg-amber-500/[0.06] p-5">
+          <h2 className="mb-4 flex items-center gap-2 admin-section-label !text-amber-400">
+            <AlertTriangle size={14} />
             {ti(lang, "要対応", "Needs attention")}
           </h2>
-          <ul className="flex flex-col gap-2 text-sm">
+          <ul className="flex flex-col gap-2">
             {unsettledPast && unsettledPast.length > 0 && (
               <ActionItem
                 count={unsettledPast.length}
@@ -274,13 +274,13 @@ export default async function AdminDashboardPage() {
       ) : null}
 
       {/* ── Today: seat occupancy + table ────────────────────────────────── */}
-      <section className="mb-8">
-        <h2 className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-gold/70">
-          <Clock size={13} />
+      <section className="mb-10">
+        <h2 className="mb-4 flex items-center gap-2 admin-section-label">
+          <Clock size={14} />
           {ti(lang, "今日", "Today")}
         </h2>
-        <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
-          <div className="flex flex-col gap-3 border border-border bg-surface/40 p-4">
+        <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+          <div className="flex flex-col gap-4 border border-border bg-surface p-5">
             <SeatBar
               label={`17:30 ${ti(lang, "1部", "Seating 1")}`}
               taken={paxAt(todayList, "s1")}
@@ -291,7 +291,7 @@ export default async function AdminDashboardPage() {
               taken={paxAt(todayList, "s2")}
               total={onlineSeats}
             />
-            <p className="mt-1 text-[10px] tracking-[0.04em] text-text-muted">
+            <p className="mt-2 admin-caption">
               {ti(
                 lang,
                 `合計 ${todayList.length}件 / ${todayList.reduce((s, r) => s + r.party_size, 0)}名`,
@@ -305,7 +305,7 @@ export default async function AdminDashboardPage() {
       </section>
 
       {/* ── Tomorrow + day after ─────────────────────────────────────────── */}
-      <section className="mb-8 grid gap-3 lg:grid-cols-2">
+      <section className="mb-10 grid gap-4 lg:grid-cols-2">
         <DayCard
           dateLabel={dateHeader(tomorrow, lang)}
           list={tomorrowList}
@@ -321,14 +321,14 @@ export default async function AdminDashboardPage() {
       </section>
 
       {/* ── Past 7 days revenue ──────────────────────────────────────────── */}
-      <section className="mb-8">
-        <h2 className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-gold/70">
+      <section className="mb-10">
+        <h2 className="mb-4 flex items-center gap-2 admin-section-label">
           <Wallet size={13} />
           {ti(lang, "直近7日間の売上", "Past 7 days")}
         </h2>
-        <div className="overflow-x-auto border border-border bg-surface/40">
-          <table className="w-full text-[13px]">
-            <thead className="border-b border-border text-[10px] uppercase tracking-[0.16em] text-text-muted">
+        <div className="overflow-x-auto border border-border bg-surface">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border text-[11px] uppercase tracking-[0.14em] text-text-secondary">
               <tr>
                 <th className="px-3 py-2 text-left">{ti(lang, "日付", "Date")}</th>
                 <th className="px-3 py-2 text-right">{ti(lang, "予約", "Cov.")}</th>
@@ -341,7 +341,7 @@ export default async function AdminDashboardPage() {
             <tbody>
               {(daily7 ?? []).map((d) => (
                 <tr key={d.service_date} className="border-b border-border/40 last:border-b-0">
-                  <td className="px-3 py-2 font-mono text-[11px] text-text-muted">{d.service_date}</td>
+                  <td className="px-3 py-2 admin-meta admin-num">{d.service_date}</td>
                   <td className="px-3 py-2 text-right">{d.covers_booked}</td>
                   <td className="px-3 py-2 text-right">{formatPHP(d.net_completed_centavos, lang)}</td>
                   <td
@@ -376,7 +376,7 @@ export default async function AdminDashboardPage() {
       {/* ── Notification failures (last 7 days) ─────────────────────────── */}
       {recentFailures && recentFailures.length > 0 && (
         <section id="notification-failures" className="mb-8">
-          <h2 className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-red-400/90">
+          <h2 className="mb-3 flex items-center gap-2 admin-section-label !text-red-400">
             <AlertTriangle size={13} />
             {ti(lang, "通知の送信失敗 (直近7日)", "Notification failures (last 7 days)")}
           </h2>
@@ -386,7 +386,7 @@ export default async function AdminDashboardPage() {
                 key={f.id}
                 className="grid grid-cols-[110px_70px_90px_1fr_auto] items-center gap-3 px-3 py-2 text-[12px]"
               >
-                <span className="font-mono text-[11px] text-text-muted">
+                <span className="admin-meta admin-num">
                   {new Date(f.attempted_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
                     timeZone: "Asia/Manila",
                     month: "2-digit",
@@ -395,10 +395,10 @@ export default async function AdminDashboardPage() {
                     minute: "2-digit",
                   })}
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.14em] text-gold/70">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-gold">
                   {f.channel}
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-text-secondary">
                   {f.kind.replace(/_/g, " ")}
                 </span>
                 <span className="truncate text-red-400/90">
@@ -407,7 +407,7 @@ export default async function AdminDashboardPage() {
                 {f.reservation_id && (
                   <Link
                     href={`/admin/reservations/${f.reservation_id}`}
-                    className="text-[10px] uppercase tracking-[0.16em] text-gold/70 hover:text-gold"
+                    className="text-[11px] uppercase tracking-[0.14em] text-gold hover:text-gold-light"
                   >
                     →
                   </Link>
@@ -415,7 +415,7 @@ export default async function AdminDashboardPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[11px] text-text-muted">
+          <p className="mt-3 admin-caption">
             {ti(
               lang,
               "Telegram bot トークンや Resend ドメイン認証を /admin/settings で確認してください。",
@@ -427,31 +427,31 @@ export default async function AdminDashboardPage() {
 
       {/* ── Recent activity (audit log preview) ──────────────────────────── */}
       <section>
-        <h2 className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-gold/70">
+        <h2 className="mb-3 flex items-center gap-2 admin-section-label">
           <Activity size={13} />
           {ti(lang, "最近のアクティビティ", "Recent activity")}
         </h2>
-        <ul className="border border-border bg-surface/40 divide-y divide-border/40">
+        <ul className="border border-border bg-surface divide-y divide-border/40">
           {(recentAudits ?? []).map((a) => (
             <li
               key={a.id}
               className="grid grid-cols-[88px_88px_1fr_auto] items-center gap-3 px-3 py-2 text-[12px]"
             >
-              <span className="font-mono text-[11px] text-text-muted">
+              <span className="admin-meta admin-num">
                 {new Date(a.occurred_at).toLocaleTimeString(lang === "ja" ? "ja-JP" : "en-PH", {
                   timeZone: "Asia/Manila",
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
               </span>
-              <span className="text-[10px] uppercase tracking-[0.14em] text-gold/60">
+              <span className="text-[11px] uppercase tracking-[0.14em] text-gold">
                 {a.actor}
               </span>
               <span className="truncate">{actionLabel(a.action, lang)}</span>
               {a.reservation_id && (
                 <Link
                   href={`/admin/reservations/${a.reservation_id}`}
-                  className="text-[10px] uppercase tracking-[0.16em] text-gold/60 hover:text-gold"
+                  className="text-[11px] uppercase tracking-[0.14em] text-gold hover:text-gold-light"
                 >
                   →
                 </Link>
@@ -485,15 +485,15 @@ function Kpi({
   warn?: boolean;
 }) {
   return (
-    <div className="border border-border bg-surface/40 px-3 py-2.5">
-      <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-text-muted">
-        <span className={warn ? "text-red-400" : "text-gold/70"}>{icon}</span>
+    <div className="border border-border bg-surface px-4 py-3.5">
+      <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-text-secondary">
+        <span className={warn ? "text-red-400" : "text-gold"}>{icon}</span>
         {label}
       </div>
-      <div className={warn ? "font-mono text-lg text-red-400" : "font-mono text-lg text-foreground"}>
+      <div className={warn ? "font-mono admin-num text-2xl font-medium text-red-400" : "font-mono admin-num text-2xl font-medium text-foreground"}>
         {value}
       </div>
-      {sub && <div className="mt-0.5 text-[10px] text-text-muted">{sub}</div>}
+      {sub && <div className="mt-1.5 admin-caption">{sub}</div>}
     </div>
   );
 }
@@ -511,21 +511,21 @@ function ActionItem({
 }) {
   const badgeCls =
     tone === "info"
-      ? "inline-flex h-6 w-6 items-center justify-center bg-gold/15 text-[11px] font-medium text-gold"
+      ? "inline-flex h-7 w-7 items-center justify-center bg-gold/15 text-[13px] font-semibold text-gold"
       : tone === "danger"
-        ? "inline-flex h-6 w-6 items-center justify-center bg-red-500/15 text-[11px] font-medium text-red-400"
-        : "inline-flex h-6 w-6 items-center justify-center bg-amber-500/15 text-[11px] font-medium text-amber-400";
+        ? "inline-flex h-7 w-7 items-center justify-center bg-red-500/15 text-[13px] font-semibold text-red-400"
+        : "inline-flex h-7 w-7 items-center justify-center bg-amber-500/15 text-[13px] font-semibold text-amber-400";
   return (
     <li>
       <Link
         href={href}
-        className="group flex items-center justify-between gap-3 border border-border/30 bg-background/30 px-3 py-2 hover:border-gold/40 hover:bg-surface/50"
+        className="group flex items-center justify-between gap-3 border border-border/60 bg-background/60 px-3 py-2.5 hover:border-gold/40 hover:bg-surface"
       >
         <span className="flex items-center gap-3">
           <span className={badgeCls}>{count}</span>
-          <span className="text-foreground">{label}</span>
+          <span className="admin-body">{label}</span>
         </span>
-        <span className="text-[10px] uppercase tracking-[0.16em] text-gold/60 group-hover:text-gold">
+        <span className="text-[11px] uppercase tracking-[0.14em] text-gold group-hover:text-gold-light">
           →
         </span>
       </Link>
@@ -547,8 +547,8 @@ function SeatBar({
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-[11px] uppercase tracking-[0.14em] text-text-secondary">{label}</span>
-        <span className="font-mono text-[11px] text-foreground">
+        <span className="text-[12px] uppercase tracking-[0.12em] text-text-secondary">{label}</span>
+        <span className="font-mono admin-num text-[13px] font-medium text-foreground">
           {taken}/{total}
         </span>
       </div>
@@ -582,16 +582,16 @@ function ReservationsTable({
 }) {
   if (list.length === 0) {
     return (
-      <div className="border border-border bg-surface/30 px-3 py-5 text-center text-sm text-text-muted">
+      <div className="border border-border bg-surface px-4 py-6 text-center admin-body text-text-secondary">
         {ti(lang, "予約はありません。", "No bookings.")}
       </div>
     );
   }
-  const cellPad = dense ? "px-3 py-2" : "px-4 py-3";
+  const cellPad = dense ? "px-3 py-3" : "px-4 py-3.5";
   return (
-    <div className="overflow-x-auto border border-border bg-surface/40">
-      <table className="w-full text-[13px]">
-        <thead className="border-b border-border text-[10px] uppercase tracking-[0.14em] text-text-muted">
+    <div className="overflow-x-auto border border-border bg-surface">
+      <table className="w-full text-sm">
+        <thead className="border-b border-border text-[11px] uppercase tracking-[0.14em] text-text-secondary">
           <tr>
             <th className={`${cellPad} text-left`}>{ti(lang, "時間", "Time")}</th>
             <th className={`${cellPad} text-left`}>{ti(lang, "お客様", "Guest")}</th>
@@ -605,7 +605,7 @@ function ReservationsTable({
         <tbody>
           {list.map((r) => (
             <tr key={r.id} className="border-b border-border/40 last:border-b-0 hover:bg-background/30">
-              <td className={`${cellPad} font-mono text-[11px]`}>
+              <td className={`${cellPad} font-mono text-[13px]`}>
                 {new Date(r.service_starts_at).toLocaleTimeString(lang === "ja" ? "ja-JP" : "en-PH", {
                   timeZone: "Asia/Manila",
                   hour: "2-digit",
@@ -613,14 +613,14 @@ function ReservationsTable({
                 })}
               </td>
               <td className={cellPad}>
-                <div className="text-foreground">
+                <div className="admin-body font-medium">
                   {r.guest_name}
                   {r.notes && <span title={r.notes} className="ml-1.5 text-amber-400" aria-label="has notes">●</span>}
                 </div>
-                <div className="text-[10px] text-text-muted">{r.guest_phone}</div>
+                <div className="admin-caption mt-0.5">{r.guest_phone}</div>
               </td>
-              <td className={`${cellPad} text-right font-mono`}>{r.party_size}</td>
-              <td className={`${cellPad} text-right font-mono text-gold`}>
+              <td className={`${cellPad} text-right font-mono admin-num text-foreground`}>{r.party_size}</td>
+              <td className={`${cellPad} text-right font-mono admin-num text-gold`}>
                 {formatPHP(r.balance_centavos, lang)}
               </td>
               <td className={`${cellPad} text-[11px]`}>
@@ -633,7 +633,7 @@ function ReservationsTable({
                 <td className={`${cellPad} text-right`}>
                   <Link
                     href={`/admin/reservations/${r.id}`}
-                    className="text-[10px] uppercase tracking-[0.14em] text-gold/70 hover:text-gold"
+                    className="text-[11px] uppercase tracking-[0.14em] text-gold hover:text-gold"
                   >
                     {ti(lang, "詳細", "Detail")}
                   </Link>
@@ -667,7 +667,7 @@ function Dot({ label, sent }: { label: string; sent: boolean }) {
         }
         aria-hidden="true"
       />
-      <span className="text-[10px] text-text-muted">{label}</span>
+      <span className="admin-meta">{label}</span>
     </span>
   );
 }
@@ -700,7 +700,7 @@ function StatusPill({
     expired: { ja: "期限切れ", en: "Expired" },
   };
   return (
-    <span className={`inline-block border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.1em] ${styles[status]}`}>
+    <span className={`inline-block border px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.08em] ${styles[status]}`}>
       {labels[status][lang]}
     </span>
   );
@@ -720,13 +720,13 @@ function DayCard({
   const s1 = paxAt(list, "s1");
   const s2 = paxAt(list, "s2");
   return (
-    <div className="border border-border bg-surface/40 p-4">
-      <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-gold/70">{dateLabel}</p>
-      <div className="grid grid-cols-2 gap-3 text-[12px]">
+    <div className="border border-border bg-surface p-4">
+      <p className="admin-section-label mb-4">{dateLabel}</p>
+      <div className="grid grid-cols-2 gap-3 text-[13px]">
         <SeatBar label="17:30" taken={s1} total={onlineSeats} />
         <SeatBar label="19:30" taken={s2} total={onlineSeats} />
       </div>
-      <p className="mt-3 text-[11px] text-text-muted">
+      <p className="mt-4 admin-caption">
         {list.length === 0
           ? ti(lang, "予約なし", "No bookings")
           : ti(

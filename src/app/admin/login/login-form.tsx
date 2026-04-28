@@ -38,12 +38,12 @@ export function LoginForm() {
 
   if (status === "sent") {
     return (
-      <div className="flex flex-col items-center gap-4 text-center text-sm">
+      <div className="flex flex-col items-center gap-4 text-center">
         <Mail size={40} className="text-gold" aria-hidden="true" />
-        <p className="font-[family-name:var(--font-noto-serif)] text-base text-foreground">
+        <p className="font-[family-name:var(--font-noto-serif)] text-lg text-foreground">
           Check your email
         </p>
-        <p className="text-xs leading-relaxed text-text-muted">
+        <p className="admin-body leading-relaxed text-text-secondary">
           We sent a sign-in link to <span className="text-gold">{email}</span>.
           <br />
           The link expires in 1 hour.
@@ -54,7 +54,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.18em] text-gold/70">
+      <label className="admin-section-label flex flex-col gap-2">
         Email
         <input
           type="email"
@@ -63,7 +63,7 @@ export function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="owner@daimasu.com.ph"
-          className="w-full border border-border bg-background/50 px-4 py-3 text-base text-foreground placeholder:text-text-muted/70 focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40"
+          className="w-full border border-border bg-background px-4 py-3 text-base normal-case tracking-normal text-foreground placeholder:text-text-muted/70 focus:border-gold/60 focus:outline-none focus:ring-1 focus:ring-gold/40"
         />
       </label>
 
@@ -86,7 +86,7 @@ export function LoginForm() {
       </button>
 
       {status === "error" && (
-        <p className="text-xs text-red-400">{errorMsg ?? "Something went wrong."}</p>
+        <p className="admin-caption text-red-400">{errorMsg ?? "Something went wrong."}</p>
       )}
     </form>
   );

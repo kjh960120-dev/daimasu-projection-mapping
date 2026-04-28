@@ -61,7 +61,7 @@ export function SettleForm({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-gold/70">
+      <p className="admin-section-label">
         {ti("精算する", "Mark as settled")}
       </p>
       <p className="text-sm text-text-secondary">
@@ -69,7 +69,7 @@ export function SettleForm({
         {formatPHP(reservation.balance_centavos, lang)}
       </p>
 
-      <label className="flex flex-col gap-1.5 text-xs uppercase tracking-[0.14em] text-text-muted">
+      <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
         {ti("支払方法", "Payment method")}
         <select
           value={method}
@@ -84,7 +84,7 @@ export function SettleForm({
         </select>
       </label>
 
-      <label className="flex flex-col gap-1.5 text-xs uppercase tracking-[0.14em] text-text-muted">
+      <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
         {ti("受領合計 (₱)", "Total received (₱)")}
         <input
           type="number"
@@ -95,7 +95,7 @@ export function SettleForm({
           onChange={(e) => setAmountPesos(e.target.value)}
           className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
         />
-        <span className="text-[10px] text-text-muted">
+        <span className="admin-meta">
           {ti(
             "ドリンク等のアップセルもここで合計可能。",
             "Drinks / upsell beyond the course can be added here."

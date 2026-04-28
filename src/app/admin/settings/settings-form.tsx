@@ -211,7 +211,7 @@ export function SettingsForm({
       <div className="lg:col-span-2 border-t border-border pt-5">
         {status === "confirm" && dangerDiffs.length > 0 && (
           <div className="mb-4 border border-red-500/40 bg-red-500/[0.06] p-4">
-            <div className="mb-2 flex items-center gap-2 text-[12px] uppercase tracking-[0.16em] text-red-400">
+            <div className="mb-2 flex items-center gap-2 text-[12px] font-medium uppercase tracking-[0.14em] text-red-400">
               <AlertTriangle size={14} />
               {ti(lang, "重要な値を変更しています", "You're changing critical values")}
             </div>
@@ -227,7 +227,7 @@ export function SettingsForm({
                 </li>
               ))}
             </ul>
-            <p className="mb-3 text-[11px] text-text-muted">
+            <p className="mb-3 admin-caption">
               {ti(
                 lang,
                 "コース価格・デポジット率・キャンセル境界・席数の変更は、今後の予約に即座に影響します。意図した変更ですか?",
@@ -266,7 +266,7 @@ export function SettingsForm({
             <button
               type="button"
               onClick={() => setStatus("idle")}
-              className="text-[12px] uppercase tracking-[0.14em] text-text-muted hover:text-foreground"
+              className="text-[12px] font-medium uppercase tracking-[0.12em] text-text-secondary hover:text-foreground"
             >
               {ti(lang, "やめる", "Cancel")}
             </button>
@@ -292,8 +292,8 @@ function dangerLabel(key: DangerField, lang: Lang): string {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="border border-border bg-surface/40 p-6">
-      <legend className="px-2 text-xs uppercase tracking-[0.18em] text-gold/70">
+    <fieldset className="border border-border bg-surface p-6">
+      <legend className="px-2 admin-section-label">
         {title}
       </legend>
       <div className="flex flex-col gap-4">{children}</div>
@@ -318,16 +318,16 @@ function NumberField({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-xs uppercase tracking-[0.14em] text-text-muted">{label}</span>
+      <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">{label}</span>
       <input
         type="number"
         value={value}
         min={min}
         max={max}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
+        className="border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-gold/60 focus:outline-none"
       />
-      {help && <span className="text-[10px] text-text-muted">{help}</span>}
+      {help && <span className="admin-meta">{help}</span>}
     </label>
   );
 }
@@ -345,14 +345,14 @@ function TextField({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-xs uppercase tracking-[0.14em] text-text-muted">{label}</span>
+      <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">{label}</span>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-gold/60 focus:outline-none"
+        className="border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-gold/60 focus:outline-none"
       />
-      {help && <span className="text-[10px] text-text-muted">{help}</span>}
+      {help && <span className="admin-meta">{help}</span>}
     </label>
   );
 }

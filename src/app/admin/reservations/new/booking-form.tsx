@@ -104,8 +104,8 @@ export function ManualBookingForm({
   return (
     <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[300px_1fr]">
       {/* LEFT — date & seat picker */}
-      <div className="border border-border bg-surface/40 p-4">
-        <p className="mb-3 text-[10px] uppercase tracking-[0.18em] text-gold/70">
+      <div className="border border-border bg-surface p-4">
+        <p className="mb-3 admin-section-label">
           {ti("空席状況 (14日)", "Capacity (14d)")}
         </p>
         <div className="flex flex-col gap-1">
@@ -158,7 +158,7 @@ export function ManualBookingForm({
               className={inputCls}
               required
             />
-            <span className="text-[10px] text-text-muted">
+            <span className="admin-meta">
               {ti(
                 `この時間帯の残り席: ${seatRemaining}`,
                 `Seats remaining this slot: ${seatRemaining}`
@@ -308,7 +308,7 @@ export function ManualBookingForm({
 }
 
 const inputCls =
-  "border border-border bg-background/50 px-3 py-2 text-[13px] text-foreground focus:border-gold/60 focus:outline-none";
+  "border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-gold/60 focus:outline-none";
 
 function Field({
   label,
@@ -319,7 +319,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">
+      <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
         {label}
       </span>
       {children}
@@ -371,15 +371,15 @@ function DateRow({
       disabled={cell.closed}
       className={
         selected
-          ? "grid grid-cols-[60px_1fr_1fr] items-center gap-2 border border-gold/60 bg-gold/10 px-2 py-1.5 text-left text-[11px]"
+          ? "grid grid-cols-[60px_1fr_1fr] items-center gap-2 border border-gold/60 bg-gold/10 px-3 py-2 text-left text-[12px]"
           : cell.closed
-            ? "grid grid-cols-[60px_1fr_1fr] items-center gap-2 border border-border/30 bg-background/20 px-2 py-1.5 text-left text-[11px] text-text-muted/60"
-            : "grid grid-cols-[60px_1fr_1fr] items-center gap-2 border border-border/40 bg-background/30 px-2 py-1.5 text-left text-[11px] hover:border-gold/40 hover:bg-surface/60"
+            ? "grid grid-cols-[60px_1fr_1fr] items-center gap-2 border border-border/30 bg-background/20 px-3 py-2 text-left text-[12px] text-text-muted/60"
+            : "grid grid-cols-[60px_1fr_1fr] items-center gap-2 border border-border/40 bg-background/30 px-3 py-2 text-left text-[12px] hover:border-gold/40 hover:bg-surface/60"
       }
     >
       <span className="font-mono">
         <span className="block">{monthDay}</span>
-        <span className="block text-[9px] text-text-muted">{dow}</span>
+        <span className="block text-[11px] text-text-secondary">{dow}</span>
       </span>
       <SlotBadge
         slot="s1"
@@ -434,10 +434,10 @@ function SlotBadge({
       onClick={onClick}
       className={
         active
-          ? "inline-flex items-center justify-between border border-gold bg-gold/15 px-1.5 py-0.5 text-[10px] text-gold"
+          ? "inline-flex items-center justify-between border border-gold bg-gold/15 px-2 py-1 text-[11px] font-medium text-gold"
           : full || closed
-            ? "inline-flex items-center justify-between border border-red-500/40 bg-red-500/5 px-1.5 py-0.5 text-[10px] text-red-400/80"
-            : "inline-flex items-center justify-between border border-border/40 px-1.5 py-0.5 text-[10px] text-foreground"
+            ? "inline-flex items-center justify-between border border-red-500/40 bg-red-500/5 px-2 py-1 text-[11px] font-medium text-red-400/80"
+            : "inline-flex items-center justify-between border border-border/40 px-2 py-1 text-[11px] font-medium text-foreground"
       }
     >
       <span className="font-mono">{label}</span>

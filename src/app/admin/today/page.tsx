@@ -142,7 +142,7 @@ export default async function TodayServiceSheetPage({
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8 print:px-0 print:py-0">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <h1 className="font-[family-name:var(--font-noto-serif)] text-xl tracking-[0.04em] text-foreground">
+        <h1 className="font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.02em] text-foreground">
           {ti(lang, "本日のサービス表", "Today's service sheet")}
         </h1>
         <div className="flex items-center gap-2">
@@ -151,10 +151,10 @@ export default async function TodayServiceSheetPage({
         </div>
       </div>
 
-      <article className="border border-border bg-surface/40 p-6 print:border-0 print:bg-white print:p-0 print:text-black">
+      <article className="border border-border bg-surface p-6 print:border-0 print:bg-white print:p-0 print:text-black">
         <header className="mb-6 flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-4 print:border-black/30">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-gold/70 print:text-black/60">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-gold print:text-black/70">
               DAIMASU 大桝 BAR · {ti(lang, "サービス表", "Service sheet")}
             </p>
             <h2 className="mt-1 font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.04em] print:text-3xl">
@@ -162,7 +162,7 @@ export default async function TodayServiceSheetPage({
             </h2>
           </div>
           <div className="text-right">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-text-muted print:text-black/60">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary print:text-black/70">
               {ti(lang, "本日合計", "Total today")}
             </p>
             <p className="font-mono text-2xl">
@@ -192,7 +192,7 @@ export default async function TodayServiceSheetPage({
           className="mt-8"
         />
 
-        <footer className="mt-8 border-t border-border pt-3 text-[10px] text-text-muted print:border-black/30 print:text-black/50">
+        <footer className="mt-8 border-t border-border pt-3 text-[11px] text-text-muted print:border-black/30 print:text-black/60">
           {ti(
             lang,
             `生成: ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Manila" })} · 凡例: ★=リピーター(N回目以降) · ●=備考あり`,
@@ -219,18 +219,18 @@ function SeatingBlock({
 }) {
   return (
     <section className={className}>
-      <h3 className="mb-3 text-[12px] uppercase tracking-[0.2em] text-gold/80 print:text-black">
+      <h3 className="mb-3 text-[13px] font-medium uppercase tracking-[0.18em] text-gold print:text-black">
         {title} · {bookings.length}件 ·{" "}
         {bookings.reduce((s, b) => s + b.party_size, 0)}名
       </h3>
       {bookings.length === 0 ? (
-        <p className="border border-dashed border-border/60 px-3 py-4 text-center text-[12px] text-text-muted print:border-black/30 print:text-black/50">
+        <p className="border border-dashed border-border/60 px-3 py-4 text-center admin-caption print:border-black/30 print:text-black/60">
           {ti(lang, "予約なし", "No bookings")}
         </p>
       ) : (
-        <table className="w-full border-collapse text-[13px]">
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-y border-border text-[10px] uppercase tracking-[0.14em] text-text-muted print:border-black/40 print:text-black/60">
+            <tr className="border-y border-border text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary print:border-black/40 print:text-black/70">
               <th className="px-2 py-2 text-left">#</th>
               <th className="px-2 py-2 text-left">{ti(lang, "時間", "Time")}</th>
               <th className="px-2 py-2 text-left">{ti(lang, "お客様", "Guest")}</th>
@@ -248,10 +248,10 @@ function SeatingBlock({
                   key={b.id}
                   className="border-b border-border/60 align-top print:border-black/20"
                 >
-                  <td className="px-2 py-3 font-mono text-[11px] text-text-muted print:text-black/60">
+                  <td className="px-2 py-3 font-mono admin-num text-[12px] text-text-secondary print:text-black/60">
                     {i + 1}
                   </td>
-                  <td className="px-2 py-3 font-mono text-[12px]">
+                  <td className="px-2 py-3 font-mono admin-num text-sm font-medium">
                     {new Date(b.service_starts_at).toLocaleTimeString(
                       lang === "ja" ? "ja-JP" : "en-PH",
                       {
@@ -277,15 +277,15 @@ function SeatingBlock({
                       )}
                       <span>{b.guest_name}</span>
                     </div>
-                    <div className="text-[10px] text-text-muted print:text-black/50">
+                    <div className="admin-meta print:text-black/60">
                       {b.guest_phone}
                     </div>
                   </td>
                   <td className="px-2 py-3 text-right font-mono">{b.party_size}</td>
-                  <td className="px-2 py-3 text-[10px] uppercase">
+                  <td className="px-2 py-3 text-[11px] uppercase">
                     {b.guest_lang}
                   </td>
-                  <td className="px-2 py-3 text-[12px] leading-snug">
+                  <td className="px-2 py-3 text-[13px] leading-snug">
                     {b.notes ? (
                       <span className="flex items-start gap-1.5">
                         <span className="text-gold/80 print:text-black">●</span>
@@ -313,7 +313,7 @@ function DateNavLinks({ date, lang }: { date: string; lang: AdminLang }) {
   const next = shiftIsoDate(date, 1);
   const today = todayIsoDate();
   return (
-    <div className="flex items-center gap-1 text-[11px] uppercase tracking-[0.14em]">
+    <div className="flex items-center gap-1 text-[12px] font-medium uppercase tracking-[0.12em]">
       <Link
         href={`/admin/today?date=${prev}`}
         className="border border-border px-2 py-1.5 hover:border-gold/40 hover:text-gold"

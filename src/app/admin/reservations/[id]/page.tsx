@@ -190,7 +190,7 @@ export default async function ReservationDetailPage({
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <Link
         href="/admin/reservations"
-        className="mb-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-text-muted hover:text-foreground"
+        className="mb-6 inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary hover:text-foreground"
       >
         <ArrowLeft size={14} />
         {ti(lang, "予約一覧へ", "Reservations")}
@@ -198,10 +198,10 @@ export default async function ReservationDetailPage({
 
       <div className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <h1 className="font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.04em] text-foreground">
+          <h1 className="font-[family-name:var(--font-noto-serif)] text-3xl tracking-[0.02em] text-foreground">
             {reservation.guest_name}
           </h1>
-          <p className="mt-1 text-sm text-text-muted">
+          <p className="mt-1.5 admin-body text-text-secondary">
             {new Date(reservation.service_starts_at).toLocaleString(
               lang === "ja" ? "ja-JP" : "en-PH",
               {
@@ -223,7 +223,7 @@ export default async function ReservationDetailPage({
           <RepeatBadge stats={repeat} lang={lang} />
         )}
         {repeat.no_show_count > 0 && (
-          <span className="border border-red-500/60 bg-red-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-red-400">
+          <span className="border border-red-500/60 bg-red-500/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-red-400">
             {ti(
               lang,
               `過去 no-show ${repeat.no_show_count}回`,
@@ -234,8 +234,8 @@ export default async function ReservationDetailPage({
       </div>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="border border-border bg-surface/40 p-6">
-          <h2 className="mb-4 text-xs uppercase tracking-[0.18em] text-gold/70">
+        <div className="border border-border bg-surface p-6">
+          <h2 className="mb-4 admin-section-label">
             {ti(lang, "予約詳細", "Reservation")}
           </h2>
           <DataRow
@@ -272,7 +272,7 @@ export default async function ReservationDetailPage({
           />
           {reservation.notes && (
             <div className="mt-4 border-t border-border pt-3">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-text-muted">
+              <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary">
                 {ti(lang, "備考", "Notes")}
               </p>
               <p className="mt-1 whitespace-pre-line text-sm text-foreground">
@@ -282,8 +282,8 @@ export default async function ReservationDetailPage({
           )}
         </div>
 
-        <div className="border border-border bg-surface/40 p-6">
-          <h2 className="mb-4 text-xs uppercase tracking-[0.18em] text-gold/70">
+        <div className="border border-border bg-surface p-6">
+          <h2 className="mb-4 admin-section-label">
             {ti(lang, "操作", "Actions")}
           </h2>
           {reservation.status === "confirmed" ? (
@@ -334,15 +334,15 @@ export default async function ReservationDetailPage({
       </section>
 
       {/* Payments */}
-      <section className="mt-8 border border-border bg-surface/40">
-        <header className="border-b border-border px-6 py-4 text-xs uppercase tracking-[0.18em] text-gold/70">
+      <section className="mt-8 border border-border bg-surface">
+        <header className="border-b border-border px-6 py-4 admin-section-label">
           {ti(lang, "決済履歴", "Payment ledger")} ·{" "}
           {ti(lang, "受領合計", "Net received")} {formatPHP(totalReceived, lang)}
         </header>
         {payments && payments.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-border text-xs uppercase tracking-[0.16em] text-text-muted">
+              <thead className="border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
                 <tr>
                   <th className="px-4 py-3 text-left">{ti(lang, "日時", "When")}</th>
                   <th className="px-4 py-3 text-left">{ti(lang, "種別", "Kind")}</th>
@@ -354,7 +354,7 @@ export default async function ReservationDetailPage({
               <tbody>
                 {payments.map((p) => (
                   <tr key={p.id} className="border-b border-border/40 last:border-b-0">
-                    <td className="px-4 py-3 font-mono text-xs text-text-muted">
+                    <td className="px-4 py-3 font-mono admin-num text-[12px] text-text-secondary">
                       {new Date(p.created_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
                         timeZone: "Asia/Manila",
                       })}
@@ -385,8 +385,8 @@ export default async function ReservationDetailPage({
 
       {/* Notifications */}
       {notifications && notifications.length > 0 && (
-        <section className="mt-8 border border-border bg-surface/40">
-          <header className="border-b border-border px-6 py-4 text-xs uppercase tracking-[0.18em] text-gold/70">
+        <section className="mt-8 border border-border bg-surface">
+          <header className="border-b border-border px-6 py-4 admin-section-label">
             {ti(lang, "通知ログ", "Notification log")}
           </header>
           <ul className="divide-y divide-border/40">
@@ -395,7 +395,7 @@ export default async function ReservationDetailPage({
                 key={n.id}
                 className="grid grid-cols-[110px_70px_70px_1fr_auto] items-center gap-3 px-4 py-2 text-[12px]"
               >
-                <span className="font-mono text-[11px] text-text-muted">
+                <span className="font-mono admin-num text-[12px] text-text-secondary">
                   {new Date(n.attempted_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
                     timeZone: "Asia/Manila",
                     month: "2-digit",
@@ -404,10 +404,10 @@ export default async function ReservationDetailPage({
                     minute: "2-digit",
                   })}
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.14em] text-gold/70">
+                <span className="text-[11px] font-medium uppercase tracking-[0.10em] text-gold">
                   {n.channel}
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                <span className="text-[11px] uppercase tracking-[0.10em] text-text-secondary">
                   {n.kind.replace(/_/g, " ")}
                 </span>
                 <span className="truncate text-text-muted">
@@ -416,10 +416,10 @@ export default async function ReservationDetailPage({
                 <span
                   className={
                     n.status === "sent"
-                      ? "text-[10px] uppercase tracking-[0.14em] text-green-400"
+                      ? "text-[11px] font-medium uppercase tracking-[0.10em] text-green-400"
                       : n.status === "failed"
-                        ? "text-[10px] uppercase tracking-[0.14em] text-red-400"
-                        : "text-[10px] uppercase tracking-[0.14em] text-text-muted"
+                        ? "text-[11px] font-medium uppercase tracking-[0.10em] text-red-400"
+                        : "text-[11px] uppercase tracking-[0.10em] text-text-secondary"
                   }
                 >
                   {n.status}
@@ -431,13 +431,13 @@ export default async function ReservationDetailPage({
       )}
 
       {/* Audit log */}
-      <section className="mt-8 border border-border bg-surface/40">
-        <header className="border-b border-border px-6 py-4 text-xs uppercase tracking-[0.18em] text-gold/70">
+      <section className="mt-8 border border-border bg-surface">
+        <header className="border-b border-border px-6 py-4 admin-section-label">
           {ti(lang, "監査ログ", "Audit log")}
         </header>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-border text-xs uppercase tracking-[0.16em] text-text-muted">
+            <thead className="border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
               <tr>
                 <th className="px-4 py-3 text-left">{ti(lang, "日時", "When")}</th>
                 <th className="px-4 py-3 text-left">{ti(lang, "実行者", "Actor")}</th>
@@ -448,7 +448,7 @@ export default async function ReservationDetailPage({
             <tbody>
               {(audits ?? []).map((a) => (
                 <tr key={a.id} className="border-b border-border/40 last:border-b-0">
-                  <td className="px-4 py-3 font-mono text-xs text-text-muted">
+                  <td className="px-4 py-3 font-mono admin-num text-[12px] text-text-secondary">
                     {new Date(a.occurred_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
                       timeZone: "Asia/Manila",
                     })}
@@ -490,14 +490,14 @@ function RepeatBadge({
   lang: AdminLang;
 }) {
   return (
-    <div className="border border-gold/60 bg-gold/10 px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-gold">
+    <div className="border border-gold/60 bg-gold/10 px-3 py-2 text-[12px] font-medium uppercase tracking-[0.12em] text-gold">
       <div className="flex items-baseline gap-3">
         <span className="font-mono text-base text-gold">
           {stats.total_visits}
         </span>
         <span>{ti(lang, "回目のご来店", `prior visit${stats.total_visits > 1 ? "s" : ""}`)}</span>
       </div>
-      <div className="mt-0.5 text-[10px] normal-case text-gold/70">
+      <div className="mt-0.5 text-[12px] normal-case text-gold-light">
         {stats.last_visit && (
           <span>
             {ti(lang, "前回 ", "Last ")}

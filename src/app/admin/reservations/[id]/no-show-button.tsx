@@ -44,7 +44,7 @@ export function NoShowButton({
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="inline-flex items-center gap-2 border border-red-500/40 px-4 py-2 text-xs uppercase tracking-[0.14em] text-red-400 hover:bg-red-500/10"
+        className="inline-flex items-center gap-2 border border-red-500/40 px-4 py-2 text-[12px] font-medium uppercase tracking-[0.12em] text-red-400 hover:bg-red-500/10"
       >
         <AlertTriangle size={14} aria-hidden="true" />
         {ti("no-showにする", "Mark as no-show")}
@@ -65,7 +65,7 @@ export function NoShowButton({
           type="button"
           onClick={execute}
           disabled={status === "pending"}
-          className="inline-flex items-center gap-2 border border-red-500/60 bg-red-500/10 px-4 py-2 text-xs uppercase tracking-[0.14em] text-red-400 hover:bg-red-500/20 disabled:opacity-60"
+          className="inline-flex items-center gap-2 border border-red-500/60 bg-red-500/10 px-4 py-2 text-[12px] font-medium uppercase tracking-[0.12em] text-red-400 hover:bg-red-500/20 disabled:opacity-60"
         >
           {status === "pending" ? (
             <>
@@ -79,7 +79,7 @@ export function NoShowButton({
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="text-xs uppercase tracking-[0.14em] text-text-muted hover:text-foreground"
+          className="text-[12px] font-medium uppercase tracking-[0.12em] text-text-secondary hover:text-foreground"
         >
           {ti("やめる", "Cancel")}
         </button>

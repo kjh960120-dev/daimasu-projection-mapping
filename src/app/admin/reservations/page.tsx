@@ -109,12 +109,12 @@ export default async function AdminReservationsPage({
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-[family-name:var(--font-noto-serif)] text-xl tracking-[0.04em] text-foreground">
+        <h1 className="font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.02em] text-foreground">
           {ti(lang, "予約一覧", "Reservations")}
         </h1>
         <Link
           href="/admin/reservations/new"
-          className="text-[11px] uppercase tracking-[0.16em] text-gold/80 hover:text-gold"
+          className="text-[12px] font-medium uppercase tracking-[0.12em] text-gold/80 hover:text-gold"
         >
           + {ti(lang, "新規予約 (電話/来店)", "New booking")}
         </Link>
@@ -126,7 +126,7 @@ export default async function AdminReservationsPage({
           filter={filter}
           placeholder={ti(lang, "名前 / 電話 / メール / 備考で検索", "Search by name, phone, email, note")}
         />
-        <nav className="flex flex-wrap gap-1 text-[11px] uppercase tracking-[0.16em]">
+        <nav className="flex flex-wrap gap-1 text-[12px] font-medium uppercase tracking-[0.12em]">
           {FILTERS.map((f) => {
             const url = new URL("https://x.local/admin/reservations");
             url.searchParams.set("filter", f.key);
@@ -150,7 +150,7 @@ export default async function AdminReservationsPage({
       </div>
 
       {searchTerm && (
-        <p className="mb-3 text-[11px] text-text-muted">
+        <p className="mb-3 admin-caption">
           {ti(
             lang,
             `"${searchTerm}" の検索結果 ${total}件`,
@@ -161,9 +161,9 @@ export default async function AdminReservationsPage({
 
       {rows && rows.length > 0 ? (
         <>
-          <div className="overflow-x-auto border border-border bg-surface/40">
-            <table className="w-full text-[13px]">
-              <thead className="border-b border-border text-[10px] uppercase tracking-[0.14em] text-text-muted">
+          <div className="overflow-x-auto border border-border bg-surface">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border text-[11px] uppercase tracking-[0.12em] text-text-secondary">
                 <tr>
                   <th className="px-3 py-2 text-left">{ti(lang, "日時", "When")}</th>
                   <th className="px-3 py-2 text-left">{ti(lang, "お客様", "Guest")}</th>
@@ -177,7 +177,7 @@ export default async function AdminReservationsPage({
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b border-border/40 last:border-b-0 hover:bg-background/30">
-                    <td className="px-3 py-2 font-mono text-[11px]">
+                    <td className="px-3 py-2 font-mono admin-num text-[13px]">
                       <div>
                         {new Date(r.service_starts_at).toLocaleString(lang === "ja" ? "ja-JP" : "en-PH", {
                           timeZone: "Asia/Manila",
@@ -196,12 +196,12 @@ export default async function AdminReservationsPage({
                     </td>
                     <td className="px-3 py-2">
                       <div className="text-foreground">{r.guest_name}</div>
-                      <div className="text-[10px] text-text-muted">
+                      <div className="admin-meta">
                         {r.guest_phone}
                         {r.guest_email && <span> · {r.guest_email}</span>}
                       </div>
                       {r.notes && (
-                        <div className="mt-0.5 max-w-md text-[10px] text-gold/70 line-clamp-2">
+                        <div className="mt-0.5 max-w-md admin-meta text-gold line-clamp-2">
                           {ti(lang, "備考: ", "Note: ")}
                           {r.notes}
                         </div>
@@ -220,7 +220,7 @@ export default async function AdminReservationsPage({
                     <td className="px-3 py-2 text-right">
                       <Link
                         href={`/admin/reservations/${r.id}`}
-                        className="text-[10px] uppercase tracking-[0.16em] text-gold/70 hover:text-gold"
+                        className="text-[12px] font-medium uppercase tracking-[0.12em] text-gold hover:text-gold-light"
                       >
                         {ti(lang, "詳細", "View")}
                       </Link>
@@ -243,7 +243,7 @@ export default async function AdminReservationsPage({
           )}
         </>
       ) : (
-        <p className="border border-border bg-surface/30 px-3 py-5 text-sm text-text-muted">
+        <p className="border border-border bg-surface px-3 py-5 text-sm text-text-muted">
           {searchTerm
             ? ti(lang, "該当する予約がありません。", "No matching reservations.")
             : ti(lang, "予約はありません。", "No reservations.")}
@@ -276,7 +276,7 @@ function Pagination({
     return `/admin/reservations?${sp.toString()}`;
   };
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[11px] text-text-muted">
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 admin-caption">
       <span>
         {ti(
           lang,
@@ -323,7 +323,7 @@ function SourcePill({
     walkin: { ja: "来店", en: "Walk-in" },
   };
   return (
-    <span className="inline-block border border-border/60 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.1em] text-text-secondary">
+    <span className="inline-block border border-border/60 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.08em] text-text-secondary">
       {labels[source][lang]}
     </span>
   );
@@ -358,7 +358,7 @@ function StatusPill({
   };
   return (
     <span
-      className={`inline-block border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.1em] ${styles[status]}`}
+      className={`inline-block border px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.08em] ${styles[status]}`}
     >
       {labels[status][lang]}
     </span>

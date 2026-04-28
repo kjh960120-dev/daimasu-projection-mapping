@@ -115,10 +115,10 @@ export default async function NewReservationPage({
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <h1 className="mb-2 font-[family-name:var(--font-noto-serif)] text-xl tracking-[0.04em] text-foreground">
+      <h1 className="mb-3 font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.02em] text-foreground">
         {ti(lang, "新規予約 (店舗側)", "New booking (owner-side)")}
       </h1>
-      <p className="mb-6 max-w-2xl text-[13px] text-text-muted">
+      <p className="mb-6 max-w-2xl admin-body text-text-secondary">
         {ti(
           lang,
           "電話・来店・スタッフ手動入力用。Stripe決済は不要で、保存と同時に確定状態になります。返金規約は通常通り適用されます。",

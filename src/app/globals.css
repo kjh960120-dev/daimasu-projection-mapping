@@ -345,3 +345,27 @@ body {
     display: none;
   }
 }
+
+/* ─── Admin typography tokens ────────────────────────────────────────────
+   Jobs-lens audit (2026-04-29): admin pages had 56× text-[10px] and zero
+   text-base. Floor moved to 13px; only timestamps/IDs may go to 11px.
+   Use these classes instead of arbitrary text-[Npx] in /admin/*. */
+
+.admin-display    { font-size: 18px; line-height: 1.3;  letter-spacing: 0.01em; }
+.admin-body       { font-size: 14px; line-height: 1.55; color: var(--foreground); }
+.admin-body-sm    { font-size: 13px; line-height: 1.5;  color: var(--foreground); }
+.admin-caption    { font-size: 12px; line-height: 1.4;  color: var(--text-secondary); }
+.admin-meta       { font-size: 11px; line-height: 1.3;  color: var(--text-muted); letter-spacing: 0.02em; }
+.admin-num        { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.admin-section-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.85;
+}
+.admin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
