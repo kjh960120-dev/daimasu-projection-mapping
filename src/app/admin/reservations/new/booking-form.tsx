@@ -40,6 +40,9 @@ export function ManualBookingForm({
   const [seating, setSeating] = useState<SeatingSlot>(defaultSeating ?? "s1");
   // Default 0 = "not yet entered" — operator types directly into NumPad.
   const [partySize, setPartySize] = useState(0);
+  // offsetDays = which 14-day window to show in the calendar pane.
+  // 0 = today..today+13, 7 = next week, 14 = +2 weeks, 30 = next month.
+  const [offsetDays, setOffsetDays] = useState(0);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+63 ");
   const [email, setEmail] = useState("");
@@ -243,11 +246,66 @@ export function ManualBookingForm({
     <form onSubmit={goToReview} className="grid gap-6 lg:grid-cols-[300px_1fr]">
       {/* LEFT — date & seat picker */}
       <div className="border border-border bg-surface p-4">
-        <p className="mb-3 admin-section-label">
-          {ti("空席状況 (14日)", "Capacity (14d)")}
-        </p>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="admin-section-label">
+            {ti("空席状況", "Availability")}
+          </p>
+          <span className="admin-meta">
+            {(() => {
+              const visible = grid.slice(offsetDays, offsetDays + 14);
+              if (visible.length === 0) return "";
+              const first = visible[0]?.date ?? "";
+              const last = visible[visible.length - 1]?.date ?? "";
+              return ti(
+                `${first.slice(5)} 〜 ${last.slice(5)}`,
+                `${first.slice(5)} → ${last.slice(5)}`
+              );
+            })()}
+          </span>
+        </div>
+
+        {/* Window navigation */}
+        <div className="mb-3 grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={() => setOffsetDays(0)}
+            disabled={offsetDays === 0}
+            className={
+              offsetDays === 0
+                ? "border border-gold/60 bg-gold/10 px-2 py-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-gold"
+                : "border border-border bg-background px-2 py-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary hover:border-gold/40 hover:text-foreground"
+            }
+          >
+            {ti("今日から", "Today")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOffsetDays(Math.max(0, offsetDays - 7))}
+            disabled={offsetDays === 0}
+            className="border border-border bg-background px-2 py-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary hover:border-gold/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {ti("← 1週間前", "← 1 week")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOffsetDays(Math.min(46, offsetDays + 7))}
+            disabled={offsetDays >= 46}
+            className="border border-border bg-background px-2 py-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary hover:border-gold/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {ti("次の週 →", "Next week →")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOffsetDays(Math.min(46, offsetDays + 30))}
+            disabled={offsetDays >= 46}
+            className="border border-border bg-background px-2 py-1.5 text-[11px] font-medium uppercase tracking-[0.10em] text-text-secondary hover:border-gold/40 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {ti("次の月 →", "Next month →")}
+          </button>
+        </div>
+
         <div className="flex flex-col gap-1">
-          {grid.map((g) => (
+          {grid.slice(offsetDays, offsetDays + 14).map((g) => (
             <DateRow
               key={g.date}
               cell={g}

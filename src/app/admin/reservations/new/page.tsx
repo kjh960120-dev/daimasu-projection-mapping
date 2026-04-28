@@ -46,7 +46,8 @@ export default async function NewReservationPage({
   let closedDates: Set<string> = new Set();
 
   const today = todayIsoDate();
-  const horizon = isoDateDaysAhead(30);
+  // 60-day horizon so the booking form can paginate forward up to ~2 months.
+  const horizon = isoDateDaysAhead(60);
 
   function pushBooking(
     date: string,
@@ -126,9 +127,10 @@ export default async function NewReservationPage({
     );
   }
 
-  // Build 14-day grid for the form
+  // Build 60-day grid for the form. The form slices its visible 14-day
+  // window from this with paginate-forward / back buttons.
   const grid = [];
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 60; i++) {
     const date = isoDateDaysAhead(i);
     const occ = occupancy.get(date) ?? { s1: empty(), s2: empty() };
     grid.push({
