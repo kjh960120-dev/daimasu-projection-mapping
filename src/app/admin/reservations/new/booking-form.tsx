@@ -6,8 +6,10 @@ import { Loader2, CheckCircle2, X, Armchair } from "lucide-react";
 import type { RestaurantSettings, SeatingSlot } from "@/lib/db/types";
 import { autoAllocateSeats, formatPHP } from "@/lib/domain/reservation";
 import type { AdminLang } from "@/lib/auth/admin-lang";
+import type { AdminTheme } from "@/lib/auth/admin-theme";
 import { NumPadInput } from "../../_components/num-pad-input";
 import { TextFieldButton } from "../../_components/text-field-button";
+import { DateFieldButton } from "../../_components/date-field-button";
 import { CelebrationPanel, EMPTY_CELEBRATION } from "../../_components/celebration-panel";
 import { CelebrationReview } from "../../_components/celebration-display";
 import type { CelebrationData } from "@/lib/db/types";
@@ -25,12 +27,14 @@ interface DayCell {
 
 export function ManualBookingForm({
   lang,
+  theme,
   settings,
   grid,
   defaultDate,
   defaultSeating,
 }: {
   lang: AdminLang;
+  theme: AdminTheme;
   settings: RestaurantSettings;
   grid: DayCell[];
   defaultDate?: string;
@@ -333,12 +337,17 @@ export function ManualBookingForm({
       <div className="flex flex-col gap-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={ti("日付", "Date")}>
-            <input
-              type="date"
+            <DateFieldButton
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={inputCls}
-              required
+              onChange={setDate}
+              label={ti("日付を選択", "Pick a date")}
+              min={grid[0]?.date}
+              max={grid[grid.length - 1]?.date}
+              disabledDates={
+                new Set(grid.filter((g) => g.closed).map((g) => g.date))
+              }
+              lang={lang}
+              theme={theme}
             />
           </Field>
           <Field label={ti("時間帯", "Seating")}>

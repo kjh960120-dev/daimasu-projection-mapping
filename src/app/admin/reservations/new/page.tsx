@@ -13,6 +13,7 @@
  */
 import { requireAdminOrRedirect } from "@/lib/auth/admin";
 import { getAdminLang, ti } from "@/lib/auth/admin-lang";
+import { getAdminTheme } from "@/lib/auth/admin-theme";
 import { adminClient } from "@/lib/db/clients";
 import type { Reservation, RestaurantSettings } from "@/lib/db/types";
 import { mockSettings, mockReservations } from "../../preview-mode";
@@ -29,6 +30,7 @@ export default async function NewReservationPage({
   searchParams: Promise<{ date?: string; seating?: string }>;
 }) {
   const lang = await getAdminLang();
+  const theme = await getAdminTheme();
   const sp = await searchParams;
 
   let settings: RestaurantSettings | null;
@@ -160,6 +162,7 @@ export default async function NewReservationPage({
 
       <ManualBookingForm
         lang={lang}
+        theme={theme}
         settings={settings}
         grid={grid}
         defaultDate={sp.date}
