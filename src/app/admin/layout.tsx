@@ -104,9 +104,6 @@ export default async function AdminLayout({
                 loading="eager"
                 decoding="sync"
               />
-              <p className="mt-2 text-[11px] tracking-[0.12em] text-text-secondary">
-                {ti(lang, "管理画面", "ADMIN PANEL")}
-              </p>
             </Link>
             <nav className="flex flex-col gap-1 text-sm">
               <NavLink
