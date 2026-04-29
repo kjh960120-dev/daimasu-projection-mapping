@@ -24,7 +24,7 @@ import { clientKey, limit, rateLimitHeaders } from "@/lib/security/rate-limit";
 import { createReservationSchema } from "@/lib/domain/schemas";
 import {
   serviceStartsAt,
-  receiptBreakdown,
+  priceBreakdown,
 } from "@/lib/domain/reservation";
 import { serverEnv } from "@/lib/env";
 import type { Reservation, RestaurantSettings } from "@/lib/db/types";
@@ -120,16 +120,21 @@ export async function POST(req: NextRequest) {
   //    lock from the RPC stays held). With supabase-js we rely on DB-side
   //    SERIALIZABLE-by-row via the RPC; concurrent INSERTs would re-acquire
   //    the lock and re-fail capacity.
-  // Deposit + balance are computed off the VAT-+-SVC-inclusive grand total so
-  // the Stripe checkout amount matches what the diner ultimately owes (and
-  // matches what the OR receipt will show on settle).
-  const breakdown = receiptBreakdown(
+  //
+  // The reservation row stores the menu-only totals (course_price × party).
+  // SVC 10% and VAT 12% are NOT folded into deposit/balance/total here:
+  //   - reservations.total_centavos is a generated column = menu × party
+  //   - the balance_eq_total CHECK requires deposit + balance = total
+  //   - the diner's deposit at booking is on the menu only; SVC/VAT are
+  //     added at settlement time and appear on the BIR Official Receipt
+  // The OR breakdown (menu + SVC + VAT = grand_total) is the legal record
+  // of the full charge, persisted via settle_with_receipt() in the
+  // settle endpoint.
+  const { deposit, balance } = priceBreakdown(
     settings.course_price_centavos,
     input.party_size,
     settings.deposit_pct
   );
-  const deposit = breakdown.deposit_centavos;
-  const balance = breakdown.balance_centavos;
 
   // pre-issue an id so we can use it in the cancel-token + Stripe metadata
   const reservationId = crypto.randomUUID();
@@ -203,10 +208,7 @@ export async function POST(req: NextRequest) {
               currency: "php",
               product_data: {
                 name: input.guest_lang === "ja" ? "DAIMASU 大桝 BAR — デポジット" : "DAIMASU 大桝 BAR — Deposit",
-                description:
-                  input.guest_lang === "ja"
-                    ? `${input.party_size}名 × ₱${(settings.course_price_centavos / 100).toLocaleString()} +SVC10% +VAT12% の${settings.deposit_pct}%`
-                    : `${input.party_size}× ₱${(settings.course_price_centavos / 100).toLocaleString()} +SVC10% +VAT12% — ${settings.deposit_pct}% deposit`,
+                description: `${input.party_size} × ₱${(settings.course_price_centavos / 100).toLocaleString()}  (${settings.deposit_pct}%)`,
               },
               unit_amount: toStripeAmount(deposit),
             },
