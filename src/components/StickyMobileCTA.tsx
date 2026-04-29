@@ -46,7 +46,7 @@ export default function StickyMobileCTA() {
     >
       <a
         href="#reservation"
-        className="flex flex-1 items-center justify-center bg-gold px-4 py-3 text-sm font-medium tracking-[0.15em] text-background transition-colors hover:bg-gold-light"
+        className="btn-gold-ornate flex flex-1 items-center justify-center px-4 py-3 font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.14em]"
       >
         {t("ご予約", "Reserve")}
       </a>
@@ -54,7 +54,7 @@ export default function StickyMobileCTA() {
         href={CONTACT.whatsapp.reservationHref}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center gap-1 border border-gold/50 bg-gold/5 px-4 py-3 text-sm tracking-[0.15em] text-gold"
+        className="btn-ornate-ghost flex items-center justify-center gap-1.5 px-4 py-3 font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.14em]"
         aria-label={t("WhatsAppで問い合わせる", "Inquire via WhatsApp")}
       >
         <MessageCircle size={16} aria-hidden="true" />

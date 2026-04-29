@@ -30,10 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — commit .env.local (shared with handoff collaborator;
-# NEXT_PUBLIC_ values are already shipped client-side).
+# env files — never commit .env.local. Real secrets live in .env.local
+# (untracked) or in deploy-platform secret managers (Vultr / GitHub Actions).
+# The shared template is .env.example only.
 .env*
-!.env.local
+!.env.example
 
 # vercel
 .vercel
@@ -46,3 +47,10 @@ next-env.d.ts
 lighthouse-*
 lh-*.json
 lh-*.html
+
+# Designer reference files dropped into the repo root by accident
+# (actual assets live under public/images/ — see component-inventory.md)
+/大桝BARページ.png
+/*.png
+/*.psd
+/*.fig

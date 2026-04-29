@@ -28,7 +28,7 @@ export default function Experience() {
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-[family-name:var(--font-display)] text-3xl font-light tracking-wide sm:text-4xl"
+            className="font-[family-name:var(--font-noto-serif)] text-3xl font-medium tracking-[0.02em] sm:text-4xl"
           >
             {t(
               <>一夜の<span className="text-gold-gradient">旅</span>のすすみかた</>,
@@ -53,7 +53,7 @@ export default function Experience() {
               className="group relative flex flex-col border border-border bg-surface/50 p-6 transition-all duration-500 hover:border-gold/40 hover:bg-card lg:p-8 xl:p-10 2xl:p-12"
             >
               <div className="mb-5 flex items-center justify-between gap-4">
-                <span className="font-[family-name:var(--font-cormorant)] text-5xl font-extralight text-gold/30 transition-colors duration-500 group-hover:text-gold/60 xl:text-6xl">
+                <span className="font-[family-name:var(--font-cinzel)] text-5xl font-normal text-gold/45 transition-colors duration-500 group-hover:text-gold/75 xl:text-6xl">
                   {step.number}
                 </span>
                 {step.thumb && (

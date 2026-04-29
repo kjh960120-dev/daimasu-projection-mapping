@@ -1,92 +1,165 @@
-# DAIMASU — Projection Mapping Kaiseki Landing
+# DAIMASU 大桝 BAR — Reservation + Revenue System
 
-대극(大料) 영상 프로젝션 맵핑 카이세키 전용 랜딩 페이지.
-마카티(필리핀)의 8석 카운터에서 진행되는 90분 영상 맵핑 코스 요리를 소개하고, 온라인 예약을 받습니다.
+8 席カウンターで運営する大桝バーの **公式予約サイト + 予約管理 + 売上管理システム**。
+マカティ(フィリピン)の 90 分プロジェクションマッピング懐石コースを案内し、
+オンライン予約 (50% デポジット) と店舗運営を一括管理します。
 
-- 8코스 · ₱8,000 · 17:30 / 19:30 2회전
-- 예약 폼 제출 시 Telegram 봇으로 현장 스탭에게 즉시 알림
-- 다국어: 日本語 / English 토글
-- 데스크톱·모바일 반응형 (Galaxy Fold ~ 1920 widescreen)
+- 8 コース · ₱8,000 · 17:30 / 19:30 2 回転 · 8 席限定
+- 50% デポジット (Stripe) + 残金は当日現地払い
+- 段階キャンセル料: 48h+ 100% / 24h+ 50% / 以降 0%
+- 自動リマインダ (24h 前 + 2h 前) — メール + WhatsApp
+- 言語: 日本語 / English
+- ダーク基調 (大桝ブランド) ・モバイル / デスクトップ両対応
+
+## アーキテクチャ
+
+```
+bar.daimasu.com.ph (Vultr) ──── Next.js 16 (standalone)
+                            ├── Caddy 2 reverse proxy + Let's Encrypt
+                            ├── Supabase (Postgres + Auth + RLS + pg_cron)
+                            ├── Stripe (PHP charges + refunds + webhooks)
+                            ├── Resend (transactional email)
+                            ├── Twilio (WhatsApp Business reminders)
+                            └── Telegram (フォールバック通知)
+```
+
+詳細: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (データフロー + 脅威モデル)
+セットアップ: [`docs/SETUP.md`](docs/SETUP.md) (オーナー初期設定 60-90 分)
 
 ## Tech Stack
 
-- **Next.js 16** (App Router, static export `output: "export"`)
-- **React 19** · **TypeScript**
-- **Tailwind CSS v4** (via `@theme inline`)
-- **Framer Motion** — 섹션 페이드·스크롤 애니메이션
-- **react-day-picker v9** — 예약 달력
-- **lucide-react** — 아이콘
+| Layer | Tech |
+|---|---|
+| **App** | Next.js 16 App Router (`output: "standalone"`), React 19, TypeScript strict |
+| **Style** | Tailwind v4, Framer Motion, lucide-react |
+| **Forms / dates** | react-day-picker 9, zod |
+| **DB** | Supabase Postgres (RLS, pg_cron, atomic capacity via `SELECT FOR UPDATE`) |
+| **Payments** | Stripe (idempotency_key を全 charge / refund に必須付与) |
+| **Email / WA** | Resend, Twilio (任意) |
+| **Self-cancel** | jose (JWS HS256) — DB には hash のみ保存 |
+| **Tests** | Vitest (unit) — 29 tests, refund tier / capacity / token security 全 pass |
+| **Deploy** | Docker → ghcr.io → ssh deploy to Vultr (GitHub Actions) |
 
 ## Local Development
 
 ```bash
-npm install
-npm run dev
-# → http://localhost:3000
+pnpm install
+cp .env.example .env.local      # fill in real Supabase / Stripe / Resend keys
+pnpm dev                        # http://localhost:3000
+pnpm test                       # 29 unit tests
+pnpm build                      # standalone build (.next/standalone/)
+pnpm lint                       # eslint
+pnpm tsc --noEmit               # typecheck
 ```
 
-프로덕션 정적 파일 생성:
+`docs/SETUP.md` の Step 2 (Supabase migrations) を実行すると `pnpm dev` がフル機能で動きます。
 
-```bash
-npm run build
-# → out/ 에 정적 HTML/CSS/JS 산출
-```
-
-## Environment Variables
-
-`.env.local` 에 Telegram 봇 자격정보가 포함되어 있습니다 (커밋됨 — 핸드오프용):
+## Routes (Phase 1+ 実装済み)
 
 ```
-NEXT_PUBLIC_TELEGRAM_BOT_TOKEN=<bot token>
-NEXT_PUBLIC_TELEGRAM_CHAT_ID=<group chat id>
+公開
+├ /                              ランディングページ + 予約フォーム
+├ /reservation/confirm           Stripe Checkout 成功後リダイレクト先
+├ /reservation/abandoned         Stripe キャンセル後リダイレクト先
+└ /cancel?token=…                self-cancel UI (preview → execute)
+
+オーナー専用 (Supabase Auth magic-link + admin_owners allowlist + RLS)
+├ /admin                         ダッシュボード (月次売上 vs 目標, 当日リスト, 7日トレンド)
+├ /admin/reservations            予約一覧 (filter: upcoming/today/past/all)
+├ /admin/reservations/[id]       予約詳細 + 支払台帳 + 監査ログ + settle/no-show
+└ /admin/settings                テナント設定 (容量, 価格, ポリシー, 通知チャネル)
+
+API
+├ POST /api/reservations         atomic capacity + Stripe Checkout 50% deposit 作成
+├ POST /api/reservations/cancel  preview/execute, 段階 refund (idempotent)
+├ POST /api/webhooks/stripe      署名検証 + payments.insert + status 更新 (idempotent)
+├ POST /api/cron/reminders       24h / 2h 前リマインド (Bearer guard)
+├ POST /api/cron/mark-no-show    当日終了後の no-show 自動マーク
+├ POST /api/cron/reap-pending    Stripe Checkout 期限切れの席解放
+├ POST /api/admin/reservations/[id]/settle         on-site 決済記録
+├ POST /api/admin/reservations/[id]/mark-no-show   manual no-show
+├ POST /api/admin/settings       owner-only テナント設定更新
+├ GET  /admin/auth/callback      magic-link 検証 + session cookie
+└ GET  /api/health               Caddy / UptimeRobot 用
 ```
 
-- `NEXT_PUBLIC_` prefix = 클라이언트 번들에 포함 (예약 폼에서 직접 Telegram API 호출)
-- 토큰 교체가 필요하면 `@BotFather`에서 재생성 후 파일 수정
+## Key Risk Mitigations
+
+| リスク | 対策 (実装場所) |
+|---|---|
+| 8 席 race condition (同時最後の席) | `assert_capacity_or_throw` (SQL 関数で `SELECT FOR UPDATE`) |
+| Stripe webhook 二重発火 → double charge | `payments.idempotency_key` UNIQUE + status guard |
+| Self-cancel URL trust (本人以外) | jose JWS + DB は hash のみ + 短命 expiry + 確認時に再ローテート |
+| PH NPC 個人情報保護 | RLS deny anon + 最小 PII (name/phone/email) + audit_log 5 年保持 |
+| 不正 / フロード予約 | Stripe deposit (50%) + honeypot field + email + phone |
+| no-show による損失 | 50% デポジット保留 + 自動 mark-no-show + ダッシュボード可視化 |
+| キャンセル料の自動執行 | `refundTier` を `service_starts_at` から再計算 (clock-skew 耐性) |
 
 ## Project Structure
 
 ```
 src/
-├── app/
-│   ├── page.tsx         섹션 조립 (Hero → About → Experience → Journey → Menu → Info)
-│   ├── layout.tsx       폰트·메타데이터
-│   └── globals.css      Tailwind + DayPicker 커스텀 테마
+├── app/                              Next.js App Router
+│   ├── page.tsx                      ランディングページ
+│   ├── layout.tsx                    フォント・メタデータ
+│   ├── globals.css                   Tailwind + DayPicker テーマ
+│   ├── reservation/{confirm,abandoned}/page.tsx
+│   ├── cancel/{page,cancel-client}.tsx
+│   ├── admin/
+│   │   ├── layout.tsx                サイドバー shell
+│   │   ├── login/{page,login-form}.tsx        magic-link
+│   │   ├── auth/callback/route.ts             code → session
+│   │   ├── logout/route.ts
+│   │   ├── page.tsx                  ダッシュボード
+│   │   ├── reservations/page.tsx     一覧
+│   │   ├── reservations/[id]/{page,settle-form,no-show-button}.tsx
+│   │   └── settings/{page,settings-form}.tsx
+│   └── api/
+│       ├── health/route.ts
+│       ├── reservations/route.ts
+│       ├── reservations/cancel/route.ts
+│       ├── webhooks/stripe/route.ts
+│       ├── cron/{reminders,mark-no-show,reap-pending}/route.ts
+│       └── admin/{settings,reservations/[id]/{settle,mark-no-show}}/route.ts
 ├── components/
-│   ├── Hero.tsx         히어로 섹션 (반응형 H1, CTA 2개)
-│   ├── Header.tsx       로고 + 내비 + 모바일 햄버거
-│   ├── About.tsx        브랜드 소개 + AESTHETICS 카드
-│   ├── Experience.tsx   3스텝 경험 흐름
-│   ├── Gallery.tsx      Journey 시각 연대기
-│   ├── MenuSection.tsx  8코스 — 모바일 캐러셀 · lg 타임라인 · xl 2컬럼
-│   ├── Info.tsx         Visitor Guide + 예약 폼 + Contact + FAQ
-│   ├── ReservationForm.tsx    날짜·좌석·인원 폼 + Telegram 전송
-│   ├── StickyMobileCTA.tsx    모바일 하단 고정 Reserve + WhatsApp
-│   └── Footer.tsx
+│   ├── ReservationForm.tsx           Stripe Checkout 連動 (Phase 1 で再配線)
+│   ├── Hero / About / Experience / Gallery / MenuSection / Info / Footer / Header / StickyMobileCTA
 └── lib/
-    ├── constants.ts     SITE · NAV · COURSES · CONTACT · RESTAURANT_INFO
-    └── language.tsx     JA/EN 토글 Provider + useLang()
+    ├── env.ts                        zod-validated env (server-only enforced)
+    ├── auth/admin.ts                 getAdmin / requireAdminOrRedirect
+    ├── db/{clients,types,database.types}.ts
+    ├── domain/{reservation,schemas}.ts        pure functions + zod
+    ├── notifications/{email,whatsapp,telegram,templates}.ts
+    ├── security/{cancel-token,cron-auth}.ts
+    └── stripe/client.ts                Stripe SDK singleton
+
+supabase/migrations/0001-0008.sql      schema + RLS + capacity fn + cron stubs
+docs/{SETUP,ARCHITECTURE}.md
+deploy/{Caddyfile,vultr-bootstrap.sh}
+docker-compose.yml + Dockerfile + .github/workflows/deploy.yml
 ```
 
-## Key Design Decisions
+## Test Coverage
 
-- **DayPicker 커스텀 테마** (`globals.css` `.rdp-daimasu .rdp-root ...`): 라이브러리 기본값 override를 위해 `.rdp-root` 셀렉터에 스코프
-- **Hero H1 LCP 최적화**: `.hero-h1` class가 CSS 애니메이션으로 직접 페이드 (framer-motion 의존 없음)
-- **Sticky Mobile CTA**: Send 버튼과 `#reservation` 섹션 중앙 진입 감지로 자동 숨김
-- **Responsive design**: Tailwind 브레이크포인트 `sm/md/lg/xl/2xl`로 단일 코드베이스 분기
+```bash
+pnpm test
+```
+
+| Suite | What it verifies |
+|---|---|
+| `tests/domain/reservation.test.ts` | refund tier 境界 (48 / 24 hours), 返金額計算, deposit+balance==total, capacity-blocking status, Manila TZ wall-clock |
+| `tests/security/cancel-token.test.ts` | issue ↔ verify roundtrip, hash matching, tampering detection, expiry enforcement, distinct rids → distinct tokens, zod input validators |
+
+29 / 29 pass.
 
 ## Deployment
 
-정적 파일이라 대부분의 호스팅 선택 가능:
-
-- **Vercel** — 가장 간단 (next.config.ts `output: "export"` 자동 인식)
-- **Netlify**, **Cloudflare Pages**, **GitHub Pages**, **S3 + CloudFront** 등
-
 ```bash
-npm run build
-# out/ 을 호스팅에 업로드
+git push origin main      # GitHub Actions: test → docker build → push GHCR → ssh deploy
 ```
 
-## Contact
+詳細: [`docs/SETUP.md`](docs/SETUP.md)
 
-프로젝트 문의 — 김준호 (kjh960120@gmail.com)
+## License / Contact
+
+Internal project. Issues: kjh960120-dev/daimasu-projection-mapping

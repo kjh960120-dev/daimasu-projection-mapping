@@ -11,6 +11,7 @@ import MenuSection from "@/components/MenuSection";
 import Info from "@/components/Info";
 import Footer from "@/components/Footer";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
+import { CookieBanner } from "@/components/CookieBanner";
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -64,6 +65,7 @@ export default function Home() {
         </main>
         <Footer />
         <StickyMobileCTA />
+        <CookieBanner />
       </LangProvider>
     </ErrorBoundary>
   );

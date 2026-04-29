@@ -17,20 +17,20 @@ export default function Footer() {
       {/* Final CTA */}
       <div className="py-14 text-center md:py-16">
         <div className="mx-auto max-w-6xl px-6 lg:px-12">
-          <p className="mb-3 font-[family-name:var(--font-display)] text-2xl font-light tracking-wide sm:text-3xl">
+          <p className="mb-3 font-[family-name:var(--font-noto-serif)] text-2xl font-medium tracking-[0.02em] sm:text-3xl">
             {t(
               "旅の始まりを、ご予約ください",
               "Begin your journey — reserve a table"
             )}
           </p>
-          <p className="mb-8 text-sm text-text-secondary">
+          <p className="mb-8 font-[family-name:var(--font-noto-serif)] text-sm tracking-[0.06em] text-gold-soft">
             {t("完全予約制・8席限定", "Reservation only — 8 seats per evening")}
           </p>
           <a
             href="#reservation"
-            className="inline-flex items-center gap-2 border border-gold bg-gold/10 px-10 py-3.5 text-sm tracking-[0.2em] text-gold transition-all duration-500 hover:bg-gold/20 hover:shadow-[0_0_24px_rgba(191,155,48,0.15)]"
+            className="btn-ornate-ghost inline-flex h-[52px] items-center justify-center px-10 font-[family-name:var(--font-noto-serif)] text-sm font-medium tracking-[0.08em]"
           >
-            {t("ご予約はこちら", "RESERVE")}
+            {t("ご予約はこちら", "Reserve your seat")}
           </a>
         </div>
       </div>
@@ -39,11 +39,11 @@ export default function Footer() {
 
       <div className="mx-auto max-w-6xl px-6 py-10 lg:px-12 md:py-12">
         <div className="flex flex-col items-center gap-6 text-center">
-          <span className="font-[family-name:var(--font-cormorant)] text-xl font-light tracking-[0.35em] text-gold/80">
+          <span className="font-[family-name:var(--font-cinzel)] text-xl font-medium tracking-[0.35em] text-gold">
             DAIMASU
           </span>
 
-          <p className="font-[family-name:var(--font-shippori)] text-sm tracking-[0.2em] text-gold/70">
+          <p className="font-[family-name:var(--font-noto-serif)] text-sm tracking-[0.14em] text-gold-soft">
             {t("お待ちしております。", "Master Owly awaits.")}
           </p>
 
@@ -76,6 +76,16 @@ export default function Footer() {
           </div>
 
           <div className="gold-line w-16" />
+
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-text-secondary">
+            <a href="/privacy" className="transition-colors hover:text-gold">
+              {t("プライバシーポリシー", "Privacy Policy")}
+            </a>
+            <span aria-hidden="true" className="text-text-muted">·</span>
+            <a href="/terms" className="transition-colors hover:text-gold">
+              {t("ご予約規約", "Terms of Service")}
+            </a>
+          </div>
 
           <p className="text-xs text-text-secondary">
             &copy; {new Date().getFullYear()} DAIMASU. All rights reserved.

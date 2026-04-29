@@ -1,9 +1,24 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ChevronDown, MessageCircle } from "lucide-react";
-import { SITE, CURRENT_CHAPTER, COURSE_PRICE, CONTACT } from "@/lib/constants";
+import { ChevronDown, ChevronRight, MessageCircle } from "lucide-react";
+import { CURRENT_CHAPTER, COURSE_PRICE, CONTACT } from "@/lib/constants";
 import { useLang } from "@/lib/language";
+
+// Gold shimmer applied inline to bypass Tailwind v4 / Turbopack class-purging quirks.
+// Base gradient has a bright highlight band that sweeps across the text via
+// framer-motion's backgroundPosition animation (below on the <motion.span>).
+const goldShimmerStyle: React.CSSProperties = {
+  background:
+    "linear-gradient(90deg, #9d7418 0%, #d4af37 28%, #fff0ad 50%, #d4af37 72%, #9d7418 100%)",
+  backgroundSize: "200% 100%",
+  WebkitBackgroundClip: "text",
+  backgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+  color: "transparent",
+  textShadow: "none",
+  display: "inline-block",
+};
 
 export default function Hero() {
   const { t } = useLang();
@@ -58,107 +73,153 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-5xl px-6 text-center">
+        {/* Chapter badge — sharp corners, 1px gold border, translucent fill + backdrop blur */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.5, delay: 0.3 }}
-          className="mb-8 inline-flex items-center gap-3 border border-border/60 px-5 py-2"
+          className="text-shadow-hero inline-flex min-w-[214px] items-center justify-center border border-[rgba(212,175,55,0.72)] bg-black/25 px-4 py-2.5 font-[family-name:var(--font-noto-serif)] text-[13px] font-medium tracking-[0.14em] text-gold backdrop-blur-[4px] shadow-[inset_0_0_18px_rgba(212,175,55,0.08)] sm:min-w-[250px] sm:px-5 sm:py-3 sm:text-[14px]"
         >
-          <span className="text-[10px] tracking-[0.3em] text-text-muted">
-            {CURRENT_CHAPTER.number}
-          </span>
-          <span className="text-[10px] text-gold/30">|</span>
-          <span className="font-serif text-xs tracking-wider text-gold">
-            {t(CURRENT_CHAPTER.name.ja, CURRENT_CHAPTER.name.en)}
-          </span>
+          <span>{CURRENT_CHAPTER.number}</span>
+          <span className="mx-3 text-[#F2D47A]/60 sm:mx-[14px]">|</span>
+          <span>{t(CURRENT_CHAPTER.name.ja, CURRENT_CHAPTER.name.en)}</span>
         </motion.div>
 
-
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 2.25, delay: 0.45, ease: "easeOut" }}
-          className="gold-line mx-auto mb-12 w-24"
+        {/* Hero ornament — 180px gold line with 2 inner diamond markers */}
+        <motion.span
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 0.85, scaleX: 1 }}
+          transition={{ duration: 1.4, delay: 0.45 }}
+          className="ornate-divider my-7"
+          aria-hidden="true"
         />
 
+        {/* Kicker — Noto Sans JP 13px SP / 15px PC, white */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.15 }}
-          className="mb-6 font-[family-name:var(--font-cormorant)] text-xs font-medium uppercase tracking-[0.25em] text-text-secondary sm:text-sm sm:tracking-[0.4em]"
+          className="mb-[22px] font-[family-name:var(--font-noto-serif)] text-[13px] font-medium tracking-[0.14em] text-foreground text-shadow-hero sm:text-[15px]"
         >
           {t("プロジェクションマッピング・ダイニング", "PROJECTION MAPPING DINING")}
         </motion.p>
 
-        {/* H1 uses pure CSS animation (not framer-motion) so Lighthouse
-            detects it as an LCP candidate without waiting on JS hydration. */}
-        <h1 className="hero-h1 mb-4 font-[family-name:var(--font-display)] text-3xl font-light leading-[1.05] tracking-tight text-foreground sm:text-5xl sm:tracking-[0.12em] lg:text-7xl lg:tracking-[0.15em] 2xl:text-[88px] 2xl:tracking-[0.15em]">
+        {/* H1 — Noto Serif JP Bold, clamp(42px, 11vw, 72px), 0.04em, 1.15 leading.
+            CSS animation (not framer-motion) so Lighthouse detects it as an LCP candidate. */}
+        <h1
+          className="hero-h1 mb-[22px] whitespace-nowrap font-[family-name:var(--font-noto-serif)] font-bold leading-[1.15] tracking-[0.02em] text-foreground [font-size:clamp(30px,9vw,72px)] [text-shadow:0_0_40px_rgba(0,0,0,0.95),0_0_20px_rgba(0,0,0,0.85),0_4px_8px_rgba(0,0,0,0.75),0_0_22px_rgba(255,255,255,0.12)]"
+        >
           {t(
-            <>マスターの<span className="text-gold">食卓</span>へ</>,
-            <>An evening at <span className="text-gold">Master Owly&apos;s</span> table</>
+            <>
+              マスターの
+              <motion.span
+                style={goldShimmerStyle}
+                animate={{ backgroundPosition: ["0% center", "200% center"] }}
+                transition={{ duration: 3.2, ease: "linear", repeat: Infinity }}
+              >
+                食卓
+              </motion.span>
+              へ
+            </>,
+            <>
+              An evening at{" "}
+              <motion.span
+                style={goldShimmerStyle}
+                animate={{ backgroundPosition: ["0% center", "200% center"] }}
+                transition={{ duration: 3.2, ease: "linear", repeat: Infinity }}
+              >
+                Master Owly&apos;s
+              </motion.span>{" "}
+              table
+            </>
           )}
         </h1>
 
+        {/* Lead — Noto Serif JP clamp(16px, 4.2vw, 23px) white 0.08em 1.8 leading */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.0, delay: 0.5 }}
-          className="mb-4 font-serif text-base font-normal tracking-[0.02em] text-text-secondary sm:text-xl sm:tracking-[0.05em]"
+          className="mb-6 whitespace-nowrap font-[family-name:var(--font-noto-serif)] font-normal leading-[1.8] tracking-[0.06em] text-foreground text-shadow-hero [font-size:clamp(12px,3.6vw,22px)]"
         >
-          {t(SITE.tagline.ja, SITE.tagline.en)}
+          {t("マスター・アウリと綴る、九十分の懐石劇場", "Ninety minutes. Eight courses. One owl with a golden feather pen.")}
         </motion.p>
 
+        {/* Price — Cinzel-NotoSerifJP stack, clamp(17px, 4vw, 23px), gold with glow */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mb-12 font-[family-name:var(--font-cormorant)] text-sm tracking-[0.1em] text-gold/80 sm:text-base sm:tracking-[0.15em]"
+          className="text-shadow-hero-gold mb-8 font-[family-name:var(--font-cinzel),var(--font-noto-serif),serif] font-medium tracking-[0.06em] text-gold [font-size:clamp(17px,4vw,23px)]"
         >
           {COURSE_PRICE.amount}
-          <span className="ml-1 text-gold/50 text-[0.75em]">PHP</span>
-          <span className="mx-2 text-gold/40">·</span>
+          <span className="ml-1 text-[0.78em] tracking-[0.12em]">PHP</span>
+          <span className="mx-3 text-gold/60">|</span>
           {t("全8コース・約90分", "8 courses · 90 minutes")}
         </motion.p>
 
+        {/* CTA stack — max-w 560px, 64px tall (58px mobile), sharp corners, chevron right */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.35 }}
-          className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
+          className="mx-auto mb-[34px] flex w-full max-w-[560px] flex-col items-stretch gap-4"
         >
           <a
             href="#reservation"
-            className="inline-flex items-center gap-2 bg-gold px-10 py-4 text-sm tracking-[0.2em] text-background transition-all duration-300 hover:bg-gold-light"
+            className="btn-gold-ornate relative flex h-[58px] items-center justify-between overflow-hidden px-7 font-[family-name:var(--font-noto-serif)] text-[15px] font-bold tracking-[0.08em] sm:h-16 sm:text-[17px]"
           >
-            {t("ご予約", "Reserve")}
+            {/* Diagonal glint sweep — periodic shine across the button face */}
+            <motion.span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 w-[42%]"
+              style={{
+                background:
+                  "linear-gradient(108deg, transparent 20%, rgba(255,255,255,0.55) 50%, transparent 80%)",
+              }}
+              initial={{ x: "-160%" }}
+              animate={{ x: "360%" }}
+              transition={{
+                duration: 2.4,
+                ease: "easeInOut",
+                repeat: Infinity,
+                repeatDelay: 2.6,
+              }}
+            />
+            <span aria-hidden="true" className="relative w-4" />
+            <span className="relative flex-1 text-center">{t("ご予約はこちら", "Reserve your seat")}</span>
+            <ChevronRight size={20} strokeWidth={1.6} aria-hidden="true" className="relative" />
           </a>
           <a
             href={CONTACT.whatsapp.reservationHref}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t("WhatsAppで問い合わせる", "Inquire via WhatsApp")}
-            className="inline-flex items-center gap-2 border border-gold/60 bg-gold/5 px-8 py-4 text-sm tracking-[0.2em] text-gold transition-all duration-300 hover:bg-gold/15"
+            className="btn-ornate-ghost flex h-[58px] items-center justify-between gap-3 px-6 font-[family-name:var(--font-noto-serif)] text-[15px] font-medium tracking-[0.06em] sm:h-16 sm:text-[17px]"
           >
-            <MessageCircle size={16} aria-hidden="true" />
-            WhatsApp
+            <MessageCircle size={18} aria-hidden="true" />
+            <span className="flex-1 text-center">{t("WhatsAppでお問い合わせ", "Inquire via WhatsApp")}</span>
+            <ChevronRight size={20} strokeWidth={1.6} aria-hidden="true" />
           </a>
         </motion.div>
 
+        {/* Scroll hint — 14px white/85% with gold underline */}
         <motion.a
           href="#experience"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7 }}
-          className="mt-6 inline-block text-xs tracking-[0.25em] text-text-muted underline decoration-gold/20 underline-offset-4 transition-colors duration-300 hover:text-foreground hover:decoration-gold/60"
+          className="mb-[42px] inline-block border-b border-[rgba(212,175,55,0.8)] pb-2 font-[family-name:var(--font-noto-serif)] text-[14px] font-normal tracking-[0.06em] text-foreground/85 transition-colors duration-300 hover:text-foreground"
         >
           {t("体験の流れを見る ↓", "see how the evening unfolds ↓")}
         </motion.a>
 
+        {/* Limited-seat frame — top/bottom gold borders + centered diamond markers */}
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2, delay: 0.9 }}
-          className="mt-8 text-[11px] tracking-[0.3em] text-text-muted"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.85 }}
+          className="limited-frame mx-auto font-[family-name:var(--font-noto-serif)] text-[15px] font-medium tracking-[0.14em] text-foreground text-shadow-hero sm:text-[17px]"
         >
           {t("カウンター8席限定", "Limited to 8 counter seats")}
         </motion.p>
@@ -168,12 +229,10 @@ export default function Hero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2"
+        className="hero-float-down absolute bottom-10 left-1/2 -translate-x-1/2"
         aria-hidden="true"
       >
-        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 3, repeat: Infinity }}>
-          <ChevronDown size={20} className="text-text-muted" />
-        </motion.div>
+        <ChevronDown size={22} strokeWidth={1.5} className="text-gold" />
       </motion.div>
     </section>
   );

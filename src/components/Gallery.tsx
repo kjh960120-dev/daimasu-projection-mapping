@@ -71,7 +71,7 @@ export default function Gallery() {
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-[family-name:var(--font-display)] text-3xl font-light tracking-wide sm:text-4xl"
+            className="font-[family-name:var(--font-noto-serif)] text-3xl font-medium tracking-[0.02em] sm:text-4xl"
           >
             {t(
               <>一皿ごとに<span className="text-gold-gradient">綴られる</span>八つの情景</>,
