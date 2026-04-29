@@ -11,42 +11,28 @@ import { requireAdminOrRedirect } from "@/lib/auth/admin";
 import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
 import type { Reservation } from "@/lib/db/types";
-import { mockReservations } from "../preview-mode";
 import { celebrationLabels } from "../_components/celebration-display";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
-
 export default async function CelebrationsPage() {
   const lang = await getAdminLang();
   const today = todayIsoDate();
 
-  let rows: Reservation[];
-  if (PREVIEW_MODE) {
-    rows = mockReservations.filter(
-      (r) =>
-        r.celebration &&
-        r.celebration.occasion !== "none" &&
-        (r.status === "pending_payment" || r.status === "confirmed") &&
-        r.service_date >= today
-    );
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const { data } = await sb
-      .from("reservations")
-      .select("*")
-      .gte("service_date", today)
-      .in("status", ["pending_payment", "confirmed"])
-      .not("celebration", "is", null)
-      .order("service_date", { ascending: true })
-      .returns<Reservation[]>();
-    rows = (data ?? []).filter(
-      (r) => r.celebration && r.celebration.occasion !== "none"
-    );
-  }
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const { data } = await sb
+    .from("reservations")
+    .select("*")
+    .gte("service_date", today)
+    .in("status", ["pending_payment", "confirmed"])
+    .not("celebration", "is", null)
+    .order("service_date", { ascending: true })
+    .returns<Reservation[]>();
+  const rows: Reservation[] = (data ?? []).filter(
+    (r) => r.celebration && r.celebration.occasion !== "none"
+  );
 
   const labels = celebrationLabels(lang);
 

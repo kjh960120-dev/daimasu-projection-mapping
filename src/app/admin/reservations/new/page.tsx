@@ -16,13 +16,10 @@ import { getAdminLang, ti } from "@/lib/auth/admin-lang";
 import { getAdminTheme } from "@/lib/auth/admin-theme";
 import { adminClient } from "@/lib/db/clients";
 import type { Reservation, RestaurantSettings } from "@/lib/db/types";
-import { mockSettings, mockReservations } from "../../preview-mode";
 import { ManualBookingForm } from "./booking-form";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 
 export default async function NewReservationPage({
   searchParams,
@@ -33,7 +30,6 @@ export default async function NewReservationPage({
   const theme = await getAdminTheme();
   const sp = await searchParams;
 
-  let settings: RestaurantSettings | null;
   // Per-date+seating occupancy. Each entry holds:
   //   - taken: number of pax (sum of party_size)
   //   - seats: actual seat_numbers occupied
@@ -45,7 +41,6 @@ export default async function NewReservationPage({
   };
   const empty = (): SlotInfo => ({ taken: 0, seats: [], bookings: [] });
   const occupancy: Map<string, { s1: SlotInfo; s2: SlotInfo }> = new Map();
-  let closedDates: Set<string> = new Set();
 
   const today = todayIsoDate();
   // 60-day horizon so the booking form can paginate forward up to ~2 months.
@@ -68,52 +63,39 @@ export default async function NewReservationPage({
     occupancy.set(date, cur);
   }
 
-  if (PREVIEW_MODE) {
-    settings = mockSettings;
-    for (const r of mockReservations) {
-      if (
-        (r.status === "confirmed" || r.status === "pending_payment") &&
-        r.service_date >= today &&
-        r.service_date <= horizon
-      ) {
-        pushBooking(r.service_date, r.seating, r.party_size, r.seat_numbers, r.guest_name);
-      }
-    }
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const [{ data: settingsRow }, { data: rows }, { data: closed }] =
-      await Promise.all([
-        sb
-          .from("restaurant_settings")
-          .select("*")
-          .eq("id", 1)
-          .single<RestaurantSettings>(),
-        sb
-          .from("reservations")
-          .select("service_date,seating,party_size,status,seat_numbers,guest_name")
-          .gte("service_date", today)
-          .lte("service_date", horizon)
-          .in("status", ["confirmed", "pending_payment"])
-          .returns<
-            Pick<
-              Reservation,
-              "service_date" | "seating" | "party_size" | "status" | "seat_numbers" | "guest_name"
-            >[]
-          >(),
-        sb
-          .from("closed_dates")
-          .select("closed_date")
-          .gte("closed_date", today)
-          .lte("closed_date", horizon)
-          .returns<{ closed_date: string }[]>(),
-      ]);
-    settings = settingsRow;
-    for (const r of rows ?? []) {
-      pushBooking(r.service_date, r.seating, r.party_size, r.seat_numbers, r.guest_name);
-    }
-    closedDates = new Set((closed ?? []).map((c) => c.closed_date));
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const [{ data: settingsRow }, { data: rows }, { data: closed }] =
+    await Promise.all([
+      sb
+        .from("restaurant_settings")
+        .select("*")
+        .eq("id", 1)
+        .single<RestaurantSettings>(),
+      sb
+        .from("reservations")
+        .select("service_date,seating,party_size,status,seat_numbers,guest_name")
+        .gte("service_date", today)
+        .lte("service_date", horizon)
+        .in("status", ["confirmed", "pending_payment"])
+        .returns<
+          Pick<
+            Reservation,
+            "service_date" | "seating" | "party_size" | "status" | "seat_numbers" | "guest_name"
+          >[]
+        >(),
+      sb
+        .from("closed_dates")
+        .select("closed_date")
+        .gte("closed_date", today)
+        .lte("closed_date", horizon)
+        .returns<{ closed_date: string }[]>(),
+    ]);
+  const settings: RestaurantSettings | null = settingsRow;
+  for (const r of rows ?? []) {
+    pushBooking(r.service_date, r.seating, r.party_size, r.seat_numbers, r.guest_name);
   }
+  const closedDates: Set<string> = new Set((closed ?? []).map((c) => c.closed_date));
 
   if (!settings) {
     return (

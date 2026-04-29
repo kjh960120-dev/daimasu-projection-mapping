@@ -9,13 +9,11 @@ import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
 import { formatPHP } from "@/lib/domain/reservation";
 import type { Reservation } from "@/lib/db/types";
-import { mockReservations } from "../preview-mode";
 import { ReservationSearch } from "./search-input";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 const PAGE_SIZE = 50;
 
 const FILTERS = [
@@ -41,69 +39,39 @@ export default async function AdminReservationsPage({
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   const offset = (page - 1) * PAGE_SIZE;
 
-  let rows: Reservation[] | null;
-  let total = 0;
-  if (PREVIEW_MODE) {
-    const filtered = mockReservations.filter((r) => {
-      const inFilter = (() => {
-        switch (filter) {
-          case "upcoming":
-            return r.service_date >= today && (r.status === "pending_payment" || r.status === "confirmed");
-          case "today":
-            return r.service_date === today;
-          case "past":
-            return r.service_date < today;
-          case "all":
-            return true;
-        }
-      })();
-      if (!inFilter) return false;
-      if (!searchTerm) return true;
-      const q = searchTerm.toLowerCase();
-      return (
-        r.guest_name.toLowerCase().includes(q) ||
-        r.guest_email.toLowerCase().includes(q) ||
-        r.guest_phone.toLowerCase().includes(q) ||
-        (r.notes ?? "").toLowerCase().includes(q)
-      );
-    });
-    total = filtered.length;
-    rows = filtered.slice(offset, offset + PAGE_SIZE);
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    let q = sb.from("reservations").select("*", { count: "exact" });
-    switch (filter) {
-      case "upcoming":
-        q = q
-          .gte("service_date", today)
-          .in("status", ["pending_payment", "confirmed"])
-          .order("service_starts_at", { ascending: true });
-        break;
-      case "today":
-        q = q
-          .eq("service_date", today)
-          .order("service_starts_at", { ascending: true });
-        break;
-      case "past":
-        q = q.lt("service_date", today).order("service_date", { ascending: false });
-        break;
-      case "all":
-        q = q.order("created_at", { ascending: false });
-        break;
-    }
-    if (searchTerm) {
-      const escaped = searchTerm.replace(/[%_]/g, (m) => `\\${m}`);
-      q = q.or(
-        `guest_name.ilike.%${escaped}%,guest_email.ilike.%${escaped}%,guest_phone.ilike.%${escaped}%,notes.ilike.%${escaped}%`
-      );
-    }
-    const { data, count } = await q
-      .range(offset, offset + PAGE_SIZE - 1)
-      .returns<Reservation[]>();
-    rows = data;
-    total = count ?? 0;
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  let q = sb.from("reservations").select("*", { count: "exact" });
+  switch (filter) {
+    case "upcoming":
+      q = q
+        .gte("service_date", today)
+        .in("status", ["pending_payment", "confirmed"])
+        .order("service_starts_at", { ascending: true });
+      break;
+    case "today":
+      q = q
+        .eq("service_date", today)
+        .order("service_starts_at", { ascending: true });
+      break;
+    case "past":
+      q = q.lt("service_date", today).order("service_date", { ascending: false });
+      break;
+    case "all":
+      q = q.order("created_at", { ascending: false });
+      break;
   }
+  if (searchTerm) {
+    const escaped = searchTerm.replace(/[%_]/g, (m) => `\\${m}`);
+    q = q.or(
+      `guest_name.ilike.%${escaped}%,guest_email.ilike.%${escaped}%,guest_phone.ilike.%${escaped}%,notes.ilike.%${escaped}%`
+    );
+  }
+  const { data, count } = await q
+    .range(offset, offset + PAGE_SIZE - 1)
+    .returns<Reservation[]>();
+  const rows: Reservation[] | null = data;
+  const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (

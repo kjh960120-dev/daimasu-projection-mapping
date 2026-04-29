@@ -15,13 +15,11 @@ import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
 import type { Reservation } from "@/lib/db/types";
 import { formatPHP } from "@/lib/domain/reservation";
-import { mockReservations } from "../preview-mode";
 import { CustomerSearch } from "./search-input";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 const PAGE_SIZE = 50;
 
 interface CustomerRow {
@@ -49,20 +47,15 @@ export default async function CustomersPage({
   const q = (sp.q ?? "").trim().slice(0, 80);
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
-  let rows: Reservation[] = [];
-  if (PREVIEW_MODE) {
-    rows = mockReservations;
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const { data } = await sb
-      .from("reservations")
-      .select("*")
-      .order("service_starts_at", { ascending: false })
-      .limit(2000)
-      .returns<Reservation[]>();
-    rows = data ?? [];
-  }
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const { data } = await sb
+    .from("reservations")
+    .select("*")
+    .order("service_starts_at", { ascending: false })
+    .limit(2000)
+    .returns<Reservation[]>();
+  const rows: Reservation[] = data ?? [];
 
   // Group by phone (treats duplicate-name people separately).
   const grouped = new Map<string, CustomerRow>();

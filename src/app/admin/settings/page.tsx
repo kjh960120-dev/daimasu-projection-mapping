@@ -7,28 +7,20 @@ import { getAdminLang, ti } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
 import type { RestaurantSettings } from "@/lib/db/types";
 import { SettingsForm } from "./settings-form";
-import { mockSettings } from "../preview-mode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
-
 export default async function AdminSettingsPage() {
   const lang = await getAdminLang();
-  let settings: RestaurantSettings | null;
-  if (PREVIEW_MODE) {
-    settings = mockSettings;
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const { data } = await sb
-      .from("restaurant_settings")
-      .select("*")
-      .eq("id", 1)
-      .single<RestaurantSettings>();
-    settings = data;
-  }
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const { data } = await sb
+    .from("restaurant_settings")
+    .select("*")
+    .eq("id", 1)
+    .single<RestaurantSettings>();
+  const settings: RestaurantSettings | null = data;
 
   return (
     <div className="px-6 py-6 sm:px-8">

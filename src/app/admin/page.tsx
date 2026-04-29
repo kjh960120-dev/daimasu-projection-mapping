@@ -33,13 +33,6 @@ import type {
   RestaurantSettings,
   RevenueMonthly,
 } from "@/lib/db/types";
-import {
-  mockSettings,
-  mockMonthly,
-  mockNoShow,
-  mockReservations,
-  mockNotificationFailures,
-} from "./preview-mode";
 import type { NotificationLog } from "@/lib/db/types";
 import { QuickTiles } from "./_components/quick-tiles";
 import { CapacityBar } from "./_components/capacity-bar";
@@ -47,8 +40,6 @@ import { CounterSeatMap } from "./_components/counter-seat-map";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 
 interface NoShowRow {
   month_start: string;
@@ -80,77 +71,58 @@ export default async function AdminDashboardPage() {
   let recentAudits: AuditRow[] | null = null;
   let recentFailures: NotificationLog[] | null = null;
 
-  if (PREVIEW_MODE) {
-    settings = mockSettings;
-    monthly = mockMonthly;
-    noShow = mockNoShow;
-    // Surface every confirmed/completed/no_show booking ±2 days for the preview.
-    allUpcoming = mockReservations;
-    unsettledPast = mockReservations.filter(
-      (r) => r.status === "confirmed" && r.service_date < todayIsoDate()
-    );
-    recentAudits = [
-      { id: 1, occurred_at: new Date(nowMs).toISOString(), actor: "webhook", action: "reservation.confirm", reservation_id: "11111111-1111-1111-1111-111111111111" },
-      { id: 2, occurred_at: new Date(nowMs - 7200_000).toISOString(), actor: "system", action: "reservation.no_show", reservation_id: "55555555-5555-5555-5555-555555555555" },
-      { id: 3, occurred_at: new Date(nowMs - 86400_000).toISOString(), actor: "guest", action: "reservation.cancel.full", reservation_id: "66666666-6666-6666-6666-666666666666" },
-    ];
-    recentFailures = mockNotificationFailures;
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const monthStart = currentMonthStart();
-    const monthIso = monthStart.toISOString().slice(0, 10);
-    const today = todayIsoDate();
-    const dayPlus2 = isoDateDaysAhead(2);
-
-    const [settingsRes, monthlyRes, noShowRes, upcomingRes, unsettledRes, auditsRes, failuresRes] =
-      await Promise.all([
-        sb.from("restaurant_settings").select("*").eq("id", 1).single<RestaurantSettings>(),
-        sb.from("revenue_monthly").select("*").eq("month_start", monthIso).maybeSingle<RevenueMonthly>(),
-        sb.from("no_show_rate").select("*").eq("month_start", monthIso).maybeSingle<NoShowRow>(),
-        sb
-          .from("reservations")
-          .select("*")
-          .gte("service_date", today)
-          .lte("service_date", dayPlus2)
-          .in("status", ["confirmed", "completed"])
-          .order("service_starts_at", { ascending: true })
-          .returns<Reservation[]>(),
-        sb
-          .from("reservations")
-          .select("*")
-          .lt("service_date", today)
-          .eq("status", "confirmed")
-          .order("service_starts_at", { ascending: false })
-          .limit(20)
-          .returns<Reservation[]>(),
-        sb
-          .from("audit_log")
-          .select("id,occurred_at,actor,action,reservation_id")
-          .order("occurred_at", { ascending: false })
-          .limit(10)
-          .returns<AuditRow[]>(),
-        sb
-          .from("notification_log")
-          .select("*")
-          .eq("status", "failed")
-          .gte("attempted_at", new Date(nowMs - 7 * 86400_000).toISOString())
-          .order("attempted_at", { ascending: false })
-          .limit(20)
-          .returns<NotificationLog[]>(),
-      ]);
-    settings = settingsRes.data;
-    monthly = monthlyRes.data;
-    noShow = noShowRes.data;
-    allUpcoming = upcomingRes.data;
-    unsettledPast = unsettledRes.data;
-    recentAudits = auditsRes.data;
-    recentFailures = failuresRes.data;
-  }
-
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const monthStart = currentMonthStart();
+  const monthIso = monthStart.toISOString().slice(0, 10);
   const today = todayIsoDate();
-  const tomorrow = isoDateDaysAhead(1);
   const dayPlus2 = isoDateDaysAhead(2);
+
+  const [settingsRes, monthlyRes, noShowRes, upcomingRes, unsettledRes, auditsRes, failuresRes] =
+    await Promise.all([
+      sb.from("restaurant_settings").select("*").eq("id", 1).single<RestaurantSettings>(),
+      sb.from("revenue_monthly").select("*").eq("month_start", monthIso).maybeSingle<RevenueMonthly>(),
+      sb.from("no_show_rate").select("*").eq("month_start", monthIso).maybeSingle<NoShowRow>(),
+      sb
+        .from("reservations")
+        .select("*")
+        .gte("service_date", today)
+        .lte("service_date", dayPlus2)
+        .in("status", ["confirmed", "completed"])
+        .order("service_starts_at", { ascending: true })
+        .returns<Reservation[]>(),
+      sb
+        .from("reservations")
+        .select("*")
+        .lt("service_date", today)
+        .eq("status", "confirmed")
+        .order("service_starts_at", { ascending: false })
+        .limit(20)
+        .returns<Reservation[]>(),
+      sb
+        .from("audit_log")
+        .select("id,occurred_at,actor,action,reservation_id")
+        .order("occurred_at", { ascending: false })
+        .limit(10)
+        .returns<AuditRow[]>(),
+      sb
+        .from("notification_log")
+        .select("*")
+        .eq("status", "failed")
+        .gte("attempted_at", new Date(nowMs - 7 * 86400_000).toISOString())
+        .order("attempted_at", { ascending: false })
+        .limit(20)
+        .returns<NotificationLog[]>(),
+    ]);
+  settings = settingsRes.data;
+  monthly = monthlyRes.data;
+  noShow = noShowRes.data;
+  allUpcoming = upcomingRes.data;
+  unsettledPast = unsettledRes.data;
+  recentAudits = auditsRes.data;
+  recentFailures = failuresRes.data;
+
+  const tomorrow = isoDateDaysAhead(1);
   const onlineSeats = settings?.online_seats ?? 8;
 
   // Group upcoming by date+seating

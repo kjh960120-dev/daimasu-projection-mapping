@@ -14,7 +14,6 @@ import { requireAdminOrRedirect } from "@/lib/auth/admin";
 import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
 import type { Reservation, RestaurantSettings } from "@/lib/db/types";
-import { mockSettings, mockReservations } from "../preview-mode";
 import { PrintButton } from "./print-button";
 import { CounterSeatMap } from "../_components/counter-seat-map";
 import { celebrationSummaryLine } from "../_components/celebration-display";
@@ -22,8 +21,6 @@ import { Sparkles } from "lucide-react";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 
 export default async function TodayServiceSheetPage({
   searchParams,
@@ -34,85 +31,66 @@ export default async function TodayServiceSheetPage({
   const sp = await searchParams;
   const date = sp.date ?? todayIsoDate();
 
-  let settings: RestaurantSettings | null;
-  let bookings: Reservation[] = [];
   const repeatMap: Map<string, number> = new Map();
 
-  if (PREVIEW_MODE) {
-    settings = mockSettings;
-    bookings = mockReservations.filter(
-      (r) => r.service_date === date && r.status !== "cancelled_full" && r.status !== "cancelled_partial" && r.status !== "cancelled_late" && r.status !== "expired"
-    );
-    for (const b of bookings) {
-      const key = b.guest_phone || b.guest_email;
-      const prior = mockReservations.filter(
-        (r) =>
-          r.id !== b.id &&
-          r.status === "completed" &&
-          (r.guest_phone === b.guest_phone || r.guest_email === b.guest_email)
-      ).length;
-      repeatMap.set(key, prior);
-    }
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const [{ data: settingsRow }, { data: rRows }] = await Promise.all([
-      sb
-        .from("restaurant_settings")
-        .select("*")
-        .eq("id", 1)
-        .single<RestaurantSettings>(),
-      sb
-        .from("reservations")
-        .select("*")
-        .eq("service_date", date)
-        .in("status", ["confirmed", "completed", "no_show"])
-        .order("service_starts_at", { ascending: true })
-        .returns<Reservation[]>(),
-    ]);
-    settings = settingsRow;
-    bookings = rRows ?? [];
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const [{ data: settingsRow }, { data: rRows }] = await Promise.all([
+    sb
+      .from("restaurant_settings")
+      .select("*")
+      .eq("id", 1)
+      .single<RestaurantSettings>(),
+    sb
+      .from("reservations")
+      .select("*")
+      .eq("service_date", date)
+      .in("status", ["confirmed", "completed", "no_show"])
+      .order("service_starts_at", { ascending: true })
+      .returns<Reservation[]>(),
+  ]);
+  const settings: RestaurantSettings | null = settingsRow;
+  const bookings: Reservation[] = rRows ?? [];
 
-    if (bookings.length > 0) {
-      const phones = Array.from(
-        new Set(bookings.map((b) => b.guest_phone).filter(Boolean))
-      );
-      const emails = Array.from(
-        new Set(
-          bookings
-            .map((b) => b.guest_email)
-            .filter((e) => e && !e.endsWith("@daimasu.local"))
-        )
-      );
-      // Two `.in(...)` calls instead of `.or()` so values with commas don't
-      // corrupt the parsed filter.
-      const [byPhone, byEmail] = await Promise.all([
-        phones.length > 0
-          ? sb
-              .from("reservations")
-              .select("guest_phone,guest_email")
-              .eq("status", "completed")
-              .lt("service_date", date)
-              .in("guest_phone", phones)
-              .returns<Pick<Reservation, "guest_phone" | "guest_email">[]>()
-          : Promise.resolve({ data: [] }),
-        emails.length > 0
-          ? sb
-              .from("reservations")
-              .select("guest_phone,guest_email")
-              .eq("status", "completed")
-              .lt("service_date", date)
-              .in("guest_email", emails)
-              .returns<Pick<Reservation, "guest_phone" | "guest_email">[]>()
-          : Promise.resolve({ data: [] }),
-      ]);
-      const priorRows = [...(byPhone.data ?? []), ...(byEmail.data ?? [])];
-      for (const b of bookings) {
-        const count = priorRows.filter(
-          (p) => p.guest_phone === b.guest_phone || p.guest_email === b.guest_email
-        ).length;
-        repeatMap.set(b.guest_phone || b.guest_email, count);
-      }
+  if (bookings.length > 0) {
+    const phones = Array.from(
+      new Set(bookings.map((b) => b.guest_phone).filter(Boolean))
+    );
+    const emails = Array.from(
+      new Set(
+        bookings
+          .map((b) => b.guest_email)
+          .filter((e) => e && !e.endsWith("@daimasu.local"))
+      )
+    );
+    // Two `.in(...)` calls instead of `.or()` so values with commas don't
+    // corrupt the parsed filter.
+    const [byPhone, byEmail] = await Promise.all([
+      phones.length > 0
+        ? sb
+            .from("reservations")
+            .select("guest_phone,guest_email")
+            .eq("status", "completed")
+            .lt("service_date", date)
+            .in("guest_phone", phones)
+            .returns<Pick<Reservation, "guest_phone" | "guest_email">[]>()
+        : Promise.resolve({ data: [] }),
+      emails.length > 0
+        ? sb
+            .from("reservations")
+            .select("guest_phone,guest_email")
+            .eq("status", "completed")
+            .lt("service_date", date)
+            .in("guest_email", emails)
+            .returns<Pick<Reservation, "guest_phone" | "guest_email">[]>()
+        : Promise.resolve({ data: [] }),
+    ]);
+    const priorRows = [...(byPhone.data ?? []), ...(byEmail.data ?? [])];
+    for (const b of bookings) {
+      const count = priorRows.filter(
+        (p) => p.guest_phone === b.guest_phone || p.guest_email === b.guest_email
+      ).length;
+      repeatMap.set(b.guest_phone || b.guest_email, count);
     }
   }
 

@@ -22,7 +22,6 @@ import type {
   Receipt,
   Reservation,
 } from "@/lib/db/types";
-import { mockReservations, mockPayments, mockReceipts } from "../../preview-mode";
 import { SettleForm } from "./settle-form";
 import { NoShowButton } from "./no-show-button";
 import { CancelWithRefundForm } from "./cancel-form";
@@ -30,8 +29,6 @@ import { CelebrationReview } from "../../_components/celebration-display";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 
 interface AuditRow {
   id: number;
@@ -72,131 +69,101 @@ export default async function ReservationDetailPage({
     total_net_centavos: 0,
   };
 
-  if (PREVIEW_MODE) {
-    reservation = mockReservations.find((r) => r.id === id) ?? null;
-    payments = mockPayments.filter((p) => p.reservation_id === id);
-    receipt = mockReceipts.find((r) => r.reservation_id === id) ?? null;
-    notifications = [];
-    audits = [];
-    if (reservation) {
-      const sameGuest = mockReservations.filter(
-        (r) =>
-          r.id !== reservation!.id &&
-          (r.guest_phone === reservation!.guest_phone ||
-            r.guest_email === reservation!.guest_email)
-      );
-      const completed = sameGuest.filter((r) => r.status === "completed");
-      repeat = {
-        total_visits: completed.length,
-        last_visit:
-          completed
-            .map((r) => r.service_date)
-            .sort()
-            .reverse()[0] ?? null,
-        no_show_count: sameGuest.filter((r) => r.status === "no_show").length,
-        total_net_centavos: completed.reduce(
-          (s, r) => s + (r.settlement_centavos ?? 0),
-          0
-        ),
-      };
-    }
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const [
-      { data: rRow },
-      { data: pRows },
-      { data: aRows },
-      { data: nRows },
-      { data: rcptRows },
-    ] = await Promise.all([
-      sb.from("reservations").select("*").eq("id", id).maybeSingle<Reservation>(),
-      sb
-        .from("payments")
-        .select("*")
-        .eq("reservation_id", id)
-        .order("created_at", { ascending: true })
-        .returns<Payment[]>(),
-      sb
-        .from("audit_log")
-        .select("*")
-        .eq("reservation_id", id)
-        .order("occurred_at", { ascending: false })
-        .limit(50)
-        .returns<AuditRow[]>(),
-      sb
-        .from("notification_log")
-        .select("*")
-        .eq("reservation_id", id)
-        .order("attempted_at", { ascending: false })
-        .limit(20)
-        .returns<NotificationLog[]>(),
-      sb
-        .from("receipts")
-        .select("*")
-        .eq("reservation_id", id)
-        .is("voided_at", null)
-        .order("issued_at", { ascending: false })
-        .limit(1)
-        .returns<Receipt[]>(),
-    ]);
-    reservation = rRow;
-    payments = pRows;
-    audits = aRows;
-    notifications = nRows;
-    receipt = rcptRows && rcptRows.length > 0 ? rcptRows[0] : null;
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const [
+    { data: rRow },
+    { data: pRows },
+    { data: aRows },
+    { data: nRows },
+    { data: rcptRows },
+  ] = await Promise.all([
+    sb.from("reservations").select("*").eq("id", id).maybeSingle<Reservation>(),
+    sb
+      .from("payments")
+      .select("*")
+      .eq("reservation_id", id)
+      .order("created_at", { ascending: true })
+      .returns<Payment[]>(),
+    sb
+      .from("audit_log")
+      .select("*")
+      .eq("reservation_id", id)
+      .order("occurred_at", { ascending: false })
+      .limit(50)
+      .returns<AuditRow[]>(),
+    sb
+      .from("notification_log")
+      .select("*")
+      .eq("reservation_id", id)
+      .order("attempted_at", { ascending: false })
+      .limit(20)
+      .returns<NotificationLog[]>(),
+    sb
+      .from("receipts")
+      .select("*")
+      .eq("reservation_id", id)
+      .is("voided_at", null)
+      .order("issued_at", { ascending: false })
+      .limit(1)
+      .returns<Receipt[]>(),
+  ]);
+  reservation = rRow;
+  payments = pRows;
+  audits = aRows;
+  notifications = nRows;
+  receipt = rcptRows && rcptRows.length > 0 ? rcptRows[0] : null;
 
-    if (reservation) {
-      // Two separate queries (Postgrest's `.or()` splits on commas, which is
-      // fragile when phone/email values contain commas or other URL-tricky
-      // characters). Dedupe in JS.
-      const [{ data: byPhone }, { data: byEmail }] = await Promise.all([
-        sb
-          .from("reservations")
-          .select("id,status,service_date,settlement_centavos")
-          .eq("guest_phone", reservation.guest_phone)
-          .neq("id", id)
-          .returns<
-            Pick<
-              Reservation,
-              "id" | "status" | "service_date" | "settlement_centavos"
-            >[]
-          >(),
-        reservation.guest_email
-          ? sb
-              .from("reservations")
-              .select("id,status,service_date,settlement_centavos")
-              .eq("guest_email", reservation.guest_email)
-              .neq("id", id)
-              .returns<
-                Pick<
-                  Reservation,
-                  "id" | "status" | "service_date" | "settlement_centavos"
-                >[]
-              >()
-          : Promise.resolve({ data: [] }),
-      ]);
-      const seen = new Set<string>();
-      const sameGuest = [...(byPhone ?? []), ...(byEmail ?? [])].filter((r) => {
-        if (seen.has(r.id)) return false;
-        seen.add(r.id);
-        return true;
-      });
-      const completed = sameGuest.filter((r) => r.status === "completed");
-      repeat = {
-        total_visits: completed.length,
-        last_visit:
-          completed
-            .map((r) => r.service_date)
-            .sort()
-            .reverse()[0] ?? null,
-        no_show_count: sameGuest.filter((r) => r.status === "no_show").length,
-        total_net_centavos: completed.reduce(
-          (s, r) => s + (r.settlement_centavos ?? 0),
-          0
-        ),
-      };
-    }
+  if (reservation) {
+    // Two separate queries (Postgrest's `.or()` splits on commas, which is
+    // fragile when phone/email values contain commas or other URL-tricky
+    // characters). Dedupe in JS.
+    const [{ data: byPhone }, { data: byEmail }] = await Promise.all([
+      sb
+        .from("reservations")
+        .select("id,status,service_date,settlement_centavos")
+        .eq("guest_phone", reservation.guest_phone)
+        .neq("id", id)
+        .returns<
+          Pick<
+            Reservation,
+            "id" | "status" | "service_date" | "settlement_centavos"
+          >[]
+        >(),
+      reservation.guest_email
+        ? sb
+            .from("reservations")
+            .select("id,status,service_date,settlement_centavos")
+            .eq("guest_email", reservation.guest_email)
+            .neq("id", id)
+            .returns<
+              Pick<
+                Reservation,
+                "id" | "status" | "service_date" | "settlement_centavos"
+              >[]
+            >()
+        : Promise.resolve({ data: [] }),
+    ]);
+    const seen = new Set<string>();
+    const sameGuest = [...(byPhone ?? []), ...(byEmail ?? [])].filter((r) => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+    const completed = sameGuest.filter((r) => r.status === "completed");
+    repeat = {
+      total_visits: completed.length,
+      last_visit:
+        completed
+          .map((r) => r.service_date)
+          .sort()
+          .reverse()[0] ?? null,
+      no_show_count: sameGuest.filter((r) => r.status === "no_show").length,
+      total_net_centavos: completed.reduce(
+        (s, r) => s + (r.settlement_centavos ?? 0),
+        0
+      ),
+    };
   }
 
   if (!reservation) notFound();

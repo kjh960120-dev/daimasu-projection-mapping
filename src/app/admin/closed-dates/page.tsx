@@ -14,30 +14,20 @@ import { ClosedDatesManager } from "./manager";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
-
 export default async function ClosedDatesPage() {
   const lang = await getAdminLang();
   const today = todayIsoDate();
 
-  let upcoming: ClosedDate[] = [];
-  if (PREVIEW_MODE) {
-    upcoming = [
-      { closed_date: shiftIsoDate(today, 5), reason: "Private event (full buyout)", created_at: new Date().toISOString() },
-      { closed_date: shiftIsoDate(today, 12), reason: "Closed", created_at: new Date().toISOString() },
-    ];
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const { data } = await sb
-      .from("closed_dates")
-      .select("*")
-      .gte("closed_date", today)
-      .order("closed_date", { ascending: true })
-      .limit(100)
-      .returns<ClosedDate[]>();
-    upcoming = data ?? [];
-  }
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const { data } = await sb
+    .from("closed_dates")
+    .select("*")
+    .gte("closed_date", today)
+    .order("closed_date", { ascending: true })
+    .limit(100)
+    .returns<ClosedDate[]>();
+  const upcoming: ClosedDate[] = data ?? [];
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -59,10 +49,5 @@ export default async function ClosedDatesPage() {
 
 function todayIsoDate(): string {
   const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-  return d.toISOString().slice(0, 10);
-}
-function shiftIsoDate(iso: string, days: number): string {
-  const d = new Date(`${iso}T00:00:00+08:00`);
-  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }

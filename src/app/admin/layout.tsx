@@ -14,21 +14,18 @@ import {
 import { getAdmin } from "@/lib/auth/admin";
 import { getAdminLang, ti } from "@/lib/auth/admin-lang";
 import { getAdminTheme } from "@/lib/auth/admin-theme";
-import { mockAdmin } from "./preview-mode";
 import { LangToggle } from "./lang-toggle";
 import { ThemeToggle } from "./theme-toggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
-
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const admin = PREVIEW_MODE ? mockAdmin : await getAdmin();
+  const admin = await getAdmin();
   const lang = await getAdminLang();
   const theme = await getAdminTheme();
 

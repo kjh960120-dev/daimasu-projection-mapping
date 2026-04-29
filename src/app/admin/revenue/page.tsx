@@ -13,12 +13,9 @@ import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
 import { formatPHP } from "@/lib/domain/reservation";
 import type { RevenueDaily, RevenueMonthly } from "@/lib/db/types";
-import { mockDaily, mockMonthly } from "../preview-mode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const PREVIEW_MODE = process.env.PREVIEW_MODE === "1";
 
 interface DailyExtended extends RevenueDaily {
   // computed by us
@@ -43,29 +40,24 @@ export default async function RevenuePage({
   let monthly: RevenueMonthly | null = null;
   let daily: RevenueDaily[] = [];
 
-  if (PREVIEW_MODE) {
-    monthly = mockMonthly;
-    daily = mockDaily;
-  } else {
-    await requireAdminOrRedirect();
-    const sb = adminClient();
-    const [{ data: m }, { data: d }] = await Promise.all([
-      sb
-        .from("revenue_monthly")
-        .select("*")
-        .eq("month_start", monthStart)
-        .maybeSingle<RevenueMonthly>(),
-      sb
-        .from("revenue_daily")
-        .select("*")
-        .gte("service_date", monthStart)
-        .lte("service_date", monthEnd)
-        .order("service_date", { ascending: true })
-        .returns<RevenueDaily[]>(),
-    ]);
-    monthly = m;
-    daily = d ?? [];
-  }
+  await requireAdminOrRedirect();
+  const sb = adminClient();
+  const [{ data: m }, { data: d }] = await Promise.all([
+    sb
+      .from("revenue_monthly")
+      .select("*")
+      .eq("month_start", monthStart)
+      .maybeSingle<RevenueMonthly>(),
+    sb
+      .from("revenue_daily")
+      .select("*")
+      .gte("service_date", monthStart)
+      .lte("service_date", monthEnd)
+      .order("service_date", { ascending: true })
+      .returns<RevenueDaily[]>(),
+  ]);
+  monthly = m;
+  daily = d ?? [];
 
   // Compute avg-check + ensure full-month rows (zero-fill missing days).
   const filledByDate = new Map<string, RevenueDaily>(
