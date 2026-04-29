@@ -94,6 +94,18 @@ export function CounterSeatMap({
   // The seat box is a square; size from compact flag.
   const sizeCls = compact ? "min-w-0 aspect-square" : "min-w-0 aspect-square";
 
+  // Walk the seat array and emit consecutive runs of the same booking
+  // (or null = empty). Used to render a single group label spanning the
+  // run, so operators can see "these 4 seats = Yamada Taro" at a glance.
+  const groups: Array<{ start: number; count: number; booking: SeatBookingShape | null }> = [];
+  for (let i = 0; i < totalSeats; ) {
+    const b = seatToBooking[i];
+    let j = i;
+    while (j < totalSeats && seatToBooking[j] === b) j++;
+    groups.push({ start: i, count: j - i, booking: b });
+    i = j;
+  }
+
   return (
     <div className="w-full">
       {showCounter && (
@@ -121,32 +133,67 @@ export function CounterSeatMap({
         </div>
       )}
 
-      {/* Seat row */}
+      {/* Seat row + group labels — single 2-row grid so labels span
+          across all the seats that belong to the same booking. */}
       <div
-        className={`grid grid-cols-${totalSeats <= 8 ? totalSeats : 8} ${compact ? "gap-1" : "gap-1.5"}`}
+        className={compact ? "grid gap-x-1 gap-y-0.5" : "grid gap-x-1.5 gap-y-1"}
         style={{
           gridTemplateColumns: `repeat(${Math.min(totalSeats, 8)}, minmax(0, 1fr))`,
         }}
       >
-        {seatToBooking.map((b, i) => {
-          const seatNumber = i + 1;
-          const prev = i > 0 ? seatToBooking[i - 1] : null;
-          const next = i < totalSeats - 1 ? seatToBooking[i + 1] : null;
-          const isFirstOfGroup = b !== null && b !== prev;
-          const isLastOfGroup = b !== null && b !== next;
-          return (
-            <SeatSquare
-              key={i}
-              number={seatNumber}
-              booking={b}
-              isFirstOfGroup={isFirstOfGroup}
-              isLastOfGroup={isLastOfGroup}
-              compact={compact}
-              sizeCls={sizeCls}
-              lang={lang}
+        {/* Row 1: seat squares */}
+        {seatToBooking.map((b, i) => (
+          <SeatSquare
+            key={`seat-${i}`}
+            number={i + 1}
+            booking={b}
+            compact={compact}
+            sizeCls={sizeCls}
+            lang={lang}
+          />
+        ))}
+        {/* Row 2: group label bars — one per booked group, spans the
+            booking's seat range. Empty groups render nothing. */}
+        {groups.map((g) =>
+          g.booking ? (
+            <div
+              key={`group-${g.start}`}
+              style={{
+                gridColumn: `${g.start + 1} / span ${g.count}`,
+                gridRow: 2,
+              }}
+              className={
+                compact
+                  ? "flex items-center justify-center gap-1 border-l-2 border-r-2 border-b-2 border-red-500/60 bg-red-500/[0.18] px-1 py-0.5 text-[10px] font-semibold leading-none text-red-400"
+                  : "flex items-center justify-center gap-1.5 border-l-2 border-r-2 border-b-2 border-red-500/70 bg-red-500/[0.18] px-2 py-1 text-[12px] font-semibold leading-none text-red-400"
+              }
+              title={`${g.booking.guest_name} (${g.booking.party_size}${ti(lang, "名", " pax")})`}
+            >
+              <span className="min-w-0 truncate">
+                {g.booking.guest_name}
+              </span>
+              <span
+                className={
+                  compact
+                    ? "shrink-0 rounded-sm bg-red-500/30 px-1 font-mono text-[9px] text-red-300"
+                    : "shrink-0 rounded-sm bg-red-500/30 px-1.5 py-0.5 font-mono text-[10px] text-red-300"
+                }
+              >
+                {g.booking.party_size}
+                {ti(lang, "名", "")}
+              </span>
+            </div>
+          ) : (
+            <div
+              key={`gap-${g.start}`}
+              style={{
+                gridColumn: `${g.start + 1} / span ${g.count}`,
+                gridRow: 2,
+              }}
+              aria-hidden="true"
             />
-          );
-        })}
+          )
+        )}
       </div>
 
       {/* Footer status */}
@@ -205,15 +252,12 @@ export function CounterSeatMap({
 function SeatSquare({
   number,
   booking,
-  isFirstOfGroup,
   compact,
   sizeCls,
   lang,
 }: {
   number: number;
   booking: SeatBookingShape | null;
-  isFirstOfGroup: boolean;
-  isLastOfGroup: boolean;
   compact: boolean;
   sizeCls: string;
   lang: AdminLang;
@@ -249,15 +293,12 @@ function SeatSquare({
     );
   }
 
-  // Truncate guest name for display (only on first seat of group).
-  const truncated =
-    booking.guest_name.length > (compact ? 5 : 7)
-      ? booking.guest_name.slice(0, compact ? 4 : 6) + "…"
-      : booking.guest_name;
-
+  // Group name + party_size now live in the bracket bar below the seat
+  // row (rendered by the parent grid). Each individual seat just shows
+  // the X + seat number.
   return (
     <div
-      className={`relative flex flex-col items-center justify-center border-2 border-red-500/60 bg-red-500/[0.12] text-red-400 ${sizeCls}`}
+      className={`relative flex flex-col items-center justify-center border-2 border-b-0 border-red-500/60 bg-red-500/[0.12] text-red-400 ${sizeCls}`}
       title={`${booking.guest_name} (${booking.party_size}${ti(lang, "名", " pax")})`}
     >
       <X size={compact ? 22 : 32} strokeWidth={2.5} aria-hidden="true" />
@@ -270,18 +311,6 @@ function SeatSquare({
       >
         {number}
       </span>
-      {isFirstOfGroup && (
-        <span
-          className={
-            compact
-              ? "mt-0.5 max-w-full truncate text-[9px] font-medium uppercase tracking-[0.04em] text-red-400"
-              : "mt-0.5 max-w-full truncate px-1 text-[10px] font-semibold tracking-[0.04em] text-red-400"
-          }
-          aria-label={booking.guest_name}
-        >
-          {truncated}
-        </span>
-      )}
     </div>
   );
 }
