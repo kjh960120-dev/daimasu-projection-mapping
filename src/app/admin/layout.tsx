@@ -52,8 +52,11 @@ export default async function AdminLayout({
             </div>
           </header>
 
-          {/* Mobile horizontal nav scroller */}
+          {/* Mobile horizontal nav scroller — primary action first */}
           <nav className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-2 py-2 text-[13px] lg:hidden print:hidden">
+            <MobileNavLink href="/admin/reservations/new" icon={<Plus size={14} />} primary>
+              {ti(lang, "新規予約", "New booking")}
+            </MobileNavLink>
             <MobileNavLink href="/admin" icon={<LayoutDashboard size={14} />}>
               {ti(lang, "ホーム", "Home")}
             </MobileNavLink>
@@ -62,9 +65,6 @@ export default async function AdminLayout({
             </MobileNavLink>
             <MobileNavLink href="/admin/reservations" icon={<CalendarDays size={14} />}>
               {ti(lang, "予約", "Bookings")}
-            </MobileNavLink>
-            <MobileNavLink href="/admin/reservations/new" icon={<Plus size={14} />}>
-              {ti(lang, "新規", "New")}
             </MobileNavLink>
             <MobileNavLink href="/admin/celebrations" icon={<Sparkles size={14} />}>
               {ti(lang, "お祝い", "Celebrate")}
@@ -94,6 +94,14 @@ export default async function AdminLayout({
               </p>
             </div>
             <nav className="flex flex-col gap-1 text-sm">
+              <NavLink
+                href="/admin/reservations/new"
+                icon={<Plus size={18} strokeWidth={2.5} />}
+                primary
+              >
+                {ti(lang, "新規予約", "New booking")}
+              </NavLink>
+              <div className="my-2 h-px bg-border" aria-hidden="true" />
               <NavLink href="/admin" icon={<LayoutDashboard size={16} />}>
                 {ti(lang, "ダッシュボード", "Dashboard")}
               </NavLink>
@@ -102,12 +110,6 @@ export default async function AdminLayout({
               </NavLink>
               <NavLink href="/admin/reservations" icon={<CalendarDays size={16} />}>
                 {ti(lang, "予約一覧", "Reservations")}
-              </NavLink>
-              <NavLink
-                href="/admin/reservations/new"
-                icon={<Plus size={16} />}
-              >
-                {ti(lang, "新規予約 (電話/来店)", "New booking")}
               </NavLink>
               <NavLink href="/admin/celebrations" icon={<Sparkles size={16} />}>
                 {ti(lang, "お祝い管理", "Celebrations")}
@@ -157,11 +159,24 @@ function NavLink({
   href,
   icon,
   children,
+  primary,
 }: {
   href: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  primary?: boolean;
 }) {
+  if (primary) {
+    return (
+      <Link
+        href={href}
+        className="flex items-center gap-3 border border-gold bg-gold px-3 py-3 text-[15px] font-semibold text-background shadow-[0_2px_0_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.35)] transition-all hover:brightness-105 hover:shadow-[0_4px_12px_rgba(212,175,55,0.35),inset_0_1px_0_rgba(255,255,255,0.45)]"
+      >
+        <span aria-hidden="true">{icon}</span>
+        <span className="tracking-[0.04em]">{children}</span>
+      </Link>
+    );
+  }
   return (
     <Link
       href={href}
@@ -177,11 +192,24 @@ function MobileNavLink({
   href,
   icon,
   children,
+  primary,
 }: {
   href: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  primary?: boolean;
 }) {
+  if (primary) {
+    return (
+      <Link
+        href={href}
+        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border border-gold bg-gold px-3.5 py-2 font-semibold text-background shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
+      >
+        <span aria-hidden="true">{icon}</span>
+        <span>{children}</span>
+      </Link>
+    );
+  }
   return (
     <Link
       href={href}
