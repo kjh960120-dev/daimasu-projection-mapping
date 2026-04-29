@@ -221,13 +221,27 @@ async function sendConfirmAndPing(reservation: Reservation, sb: SbClient) {
   const cancelUrl = `${env.NEXT_PUBLIC_SITE_URL}/cancel?token=${encodeURIComponent(fresh.token)}`;
 
   const { subject, html } = renderConfirmEmail({ reservation, settings, cancelUrl });
-  await sendEmail({
+  // Codex P2 fix: previously the return value was ignored. Resend / network
+  // failures silently disappeared and the operator had no signal that the
+  // diner never received their cancel link. Now: failures escalate via
+  // Telegram so the operator can manually re-send (and the notification_log
+  // already captured the failure detail via sendEmail's `log` arg).
+  const emailRes = await sendEmail({
     to: reservation.guest_email,
     subject,
     html,
     idempotencyKey: `email:confirm:${reservation.id}`,
     log: { reservation_id: reservation.id, kind: "guest_confirm" },
   });
+
+  if (!emailRes.ok) {
+    await notifyTelegram({
+      text: `<b>⚠ Confirmation email FAILED</b>\nReservation: <code>${reservation.id}</code>\nGuest: ${reservation.guest_name} &lt;${reservation.guest_email}&gt;\nReason: ${emailRes.error}`,
+      tokenOverride: settings.telegram_bot_token,
+      chatIdOverride: settings.telegram_chat_id,
+      log: { reservation_id: reservation.id, kind: "admin_alert" },
+    });
+  }
 
   await notifyTelegram({
     text: renderTelegramConfirm(reservation),

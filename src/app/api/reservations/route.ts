@@ -93,43 +93,9 @@ export async function POST(req: NextRequest) {
     return errJson({ code: "reservations_closed" }, 409);
   }
 
-  // 3. atomic capacity check via SQL function — throws on closed/full
+  // 3. price snapshot — menu-only totals on the reservation row (SVC + VAT
+  //    are layered on at settlement / OR issuance, not here).
   const startsAt = serviceStartsAt(input.service_date, input.seating, settings);
-  // Auto-allocate seats from the right (public path never picks manually).
-  const { data: allocatedSeats, error: capErr } = await sb.rpc(
-    "allocate_seats_or_throw",
-    {
-      p_service_date: input.service_date,
-      p_seating: input.seating,
-      p_party_size: input.party_size,
-      p_requested: null,
-    }
-  );
-  if (capErr) {
-    if (capErr.message.includes("closed_date")) {
-      return errJson({ code: "closed_date" }, 409);
-    }
-    if (capErr.message.includes("capacity_exceeded")) {
-      return errJson({ code: "capacity_exceeded" }, 409);
-    }
-    return errJson({ code: "internal", reason: capErr.message }, 500);
-  }
-  const seatNumbers = (allocatedSeats as number[] | null) ?? null;
-
-  // 4. price snapshot + INSERT (within the same connection so the FOR UPDATE
-  //    lock from the RPC stays held). With supabase-js we rely on DB-side
-  //    SERIALIZABLE-by-row via the RPC; concurrent INSERTs would re-acquire
-  //    the lock and re-fail capacity.
-  //
-  // The reservation row stores the menu-only totals (course_price × party).
-  // SVC 10% and VAT 12% are NOT folded into deposit/balance/total here:
-  //   - reservations.total_centavos is a generated column = menu × party
-  //   - the balance_eq_total CHECK requires deposit + balance = total
-  //   - the diner's deposit at booking is on the menu only; SVC/VAT are
-  //     added at settlement time and appear on the BIR Official Receipt
-  // The OR breakdown (menu + SVC + VAT = grand_total) is the legal record
-  // of the full charge, persisted via settle_with_receipt() in the
-  // settle endpoint.
   const { deposit, balance } = priceBreakdown(
     settings.course_price_centavos,
     input.party_size,
@@ -148,34 +114,44 @@ export async function POST(req: NextRequest) {
     );
   const tokenBundle = await issueCancelToken(reservationId, ttlSeconds);
 
-  const insertRow: Partial<Reservation> = {
-    id: reservationId,
-    service_date: input.service_date,
-    seating: input.seating,
-    service_starts_at: startsAt.toISOString(),
-    party_size: input.party_size,
-    guest_name: input.guest_name,
-    guest_email: input.guest_email,
-    guest_phone: input.guest_phone,
-    guest_lang: input.guest_lang,
-    notes: input.notes ?? null,
-    course_price_centavos: settings.course_price_centavos,
-    deposit_pct: settings.deposit_pct,
-    deposit_centavos: deposit,
-    balance_centavos: balance,
-    status: "pending_payment",
-    cancel_token_hash: tokenBundle.hash,
-    cancel_token_expires_at: tokenBundle.expiresAt.toISOString(),
-    source: "web",
-    seat_numbers: seatNumbers,
-  };
-
-  const { error: insertErr } = await sb.from("reservations").insert(insertRow);
-  if (insertErr) {
-    // Race: an interleaved transaction took the last seat between RPC and INSERT.
-    // The DB-side RPC should usually catch this; fallback message returned.
-    return errJson({ code: "capacity_exceeded" }, 409);
+  // 4. Atomic allocate + INSERT in a single transaction. The previous
+  //    two-step flow (allocate then insert via two HTTP calls) released
+  //    the FOR UPDATE lock between calls, allowing concurrent oversell.
+  //    book_reservation_atomic() holds the lock until insert commits.
+  const { data: bookedRow, error: bookErr } = await sb
+    .rpc("book_reservation_atomic", {
+      p_id: reservationId,
+      p_service_date: input.service_date,
+      p_seating: input.seating,
+      p_service_starts_at: startsAt.toISOString(),
+      p_party_size: input.party_size,
+      p_guest_name: input.guest_name,
+      p_guest_email: input.guest_email,
+      p_guest_phone: input.guest_phone,
+      p_guest_lang: input.guest_lang,
+      p_notes: input.notes ?? null,
+      p_course_price_centavos: settings.course_price_centavos,
+      p_deposit_pct: settings.deposit_pct,
+      p_deposit_centavos: deposit,
+      p_balance_centavos: balance,
+      p_cancel_token_hash: tokenBundle.hash,
+      p_cancel_token_expires_at: tokenBundle.expiresAt.toISOString(),
+      p_source: "web",
+      p_requested_seats: null,
+      p_celebration: null,
+    })
+    .single<Reservation>();
+  if (bookErr || !bookedRow) {
+    if (bookErr?.message.includes("closed_date")) {
+      return errJson({ code: "closed_date" }, 409);
+    }
+    if (bookErr?.message.includes("capacity_exceeded")) {
+      return errJson({ code: "capacity_exceeded" }, 409);
+    }
+    return errJson({ code: "internal", reason: bookErr?.message ?? "book_failed" }, 500);
   }
+  // seat_numbers is filled by the atomic RPC; surfaced for downstream
+  // logging if needed (currently unused — Stripe metadata covers tracking).
 
   // 5. Stripe Checkout (PHP). Idempotent per reservation.
   const env = serverEnv();

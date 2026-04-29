@@ -12,7 +12,6 @@ import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { adminClient } from "@/lib/db/clients";
 import { verifyCronAuth } from "@/lib/security/cron-auth";
-import { issueCancelToken } from "@/lib/security/cancel-token";
 import { sendEmail } from "@/lib/notifications/email";
 import { sendWhatsApp } from "@/lib/notifications/whatsapp";
 import { renderReminderEmail } from "@/lib/notifications/templates";
@@ -74,22 +73,14 @@ export async function POST(req: NextRequest) {
 
   for (const r of due) {
     try {
-      // Re-issue token so the link in the reminder always works.
-      const fresh = await issueCancelToken(r.id);
-      await sb
-        .from("reservations")
-        .update({
-          cancel_token_hash: fresh.hash,
-          cancel_token_expires_at: fresh.expiresAt.toISOString(),
-        })
-        .eq("id", r.id);
-
-      const cancelUrl = `${env.NEXT_PUBLIC_SITE_URL}/cancel?token=${encodeURIComponent(fresh.token)}`;
-
+      // Reminder no longer carries a cancel link — the original
+      // confirmation email's link is valid for the full reservation
+      // lifecycle (issued at booking with TTL = service_starts_at + 7d).
+      // Rotating cancel_token_hash here previously invalidated that link
+      // and broke self-cancel from the original email (codex P1 fix).
       const { subject, html } = renderReminderEmail({
         reservation: r,
         hoursOut: hours,
-        cancelUrl,
       });
       const reminderKind = win === "long" ? "reminder_long" : "reminder_short";
       await sendEmail({

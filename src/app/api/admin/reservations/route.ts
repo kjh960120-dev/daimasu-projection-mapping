@@ -74,38 +74,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Atomic seat allocation. Manual mode validates the requested seats;
-  // omitting them triggers rightmost-contiguous auto-allocation.
+  // Manual mode: validated requested seats; omitting → auto-allocate.
   const requested =
     input.seat_numbers && input.seat_numbers.length === input.party_size
       ? input.seat_numbers
       : null;
-  const { data: allocatedSeats, error: capErr } = await sb.rpc(
-    "allocate_seats_or_throw",
-    {
-      p_service_date: input.service_date,
-      p_seating: input.seating,
-      p_party_size: input.party_size,
-      p_requested: requested,
-    }
-  );
-  if (capErr) {
-    const msg = capErr.message || "";
-    if (msg.includes("closed_date")) {
-      return NextResponse.json({ ok: false, error: { code: "closed_date" } }, { status: 409 });
-    }
-    if (msg.includes("capacity_exceeded")) {
-      return NextResponse.json({ ok: false, error: { code: "capacity_exceeded" } }, { status: 409 });
-    }
-    if (msg.includes("seat_occupied") || msg.includes("seat_count_mismatch") || msg.includes("seat_out_of_range")) {
-      return NextResponse.json({ ok: false, error: { code: "seat_conflict", reason: msg } }, { status: 409 });
-    }
-    return NextResponse.json(
-      { ok: false, error: { code: "internal", reason: msg } },
-      { status: 500 }
-    );
-  }
-  const seatNumbers = (allocatedSeats as number[] | null) ?? null;
 
   const startsAt = serviceStartsAt(input.service_date, input.seating, settings);
   const { deposit, balance } = priceBreakdown(
@@ -122,36 +95,49 @@ export async function POST(req: NextRequest) {
   );
   const tokenBundle = await issueCancelToken(reservationId, ttlSeconds);
 
-  const insertRow: Partial<Reservation> = {
-    id: reservationId,
-    service_date: input.service_date,
-    seating: input.seating,
-    service_starts_at: startsAt.toISOString(),
-    party_size: input.party_size,
-    guest_name: input.guest_name,
-    guest_email: input.guest_email || `manual-${reservationId.slice(0, 8)}@daimasu.local`,
-    guest_phone: input.guest_phone,
-    guest_lang: input.guest_lang,
-    notes: input.notes ?? null,
-    course_price_centavos: settings.course_price_centavos,
-    deposit_pct: settings.deposit_pct,
-    deposit_centavos: input.deposit_received ? deposit : 0,
-    balance_centavos: input.deposit_received ? balance : deposit + balance,
-    status: "confirmed",
-    cancel_token_hash: tokenBundle.hash,
-    cancel_token_expires_at: tokenBundle.expiresAt.toISOString(),
-    source: input.source,
-    seat_numbers: seatNumbers,
-    celebration:
-      input.celebration && input.celebration.occasion !== "none"
-        ? input.celebration
-        : null,
-  };
-
-  const { error: insertErr } = await sb.from("reservations").insert(insertRow);
-  if (insertErr) {
+  // Atomic allocate + INSERT in a single transaction (codex P1 fix —
+  // the prior two-step RPC + insert flow allowed concurrent oversell).
+  const { error: bookErr } = await sb
+    .rpc("book_reservation_atomic", {
+      p_id: reservationId,
+      p_service_date: input.service_date,
+      p_seating: input.seating,
+      p_service_starts_at: startsAt.toISOString(),
+      p_party_size: input.party_size,
+      p_guest_name: input.guest_name,
+      p_guest_email:
+        input.guest_email || `manual-${reservationId.slice(0, 8)}@daimasu.local`,
+      p_guest_phone: input.guest_phone,
+      p_guest_lang: input.guest_lang,
+      p_notes: input.notes ?? null,
+      p_course_price_centavos: settings.course_price_centavos,
+      p_deposit_pct: settings.deposit_pct,
+      p_deposit_centavos: input.deposit_received ? deposit : 0,
+      p_balance_centavos: input.deposit_received ? balance : deposit + balance,
+      p_cancel_token_hash: tokenBundle.hash,
+      p_cancel_token_expires_at: tokenBundle.expiresAt.toISOString(),
+      p_source: input.source,
+      p_requested_seats: requested,
+      p_celebration:
+        input.celebration && input.celebration.occasion !== "none"
+          ? input.celebration
+          : null,
+      p_status: "confirmed",
+    })
+    .single<Reservation>();
+  if (bookErr) {
+    const msg = bookErr.message || "";
+    if (msg.includes("closed_date")) {
+      return NextResponse.json({ ok: false, error: { code: "closed_date" } }, { status: 409 });
+    }
+    if (msg.includes("capacity_exceeded")) {
+      return NextResponse.json({ ok: false, error: { code: "capacity_exceeded" } }, { status: 409 });
+    }
+    if (msg.includes("seat_occupied") || msg.includes("seat_count_mismatch") || msg.includes("seat_out_of_range")) {
+      return NextResponse.json({ ok: false, error: { code: "seat_conflict", reason: msg } }, { status: 409 });
+    }
     return NextResponse.json(
-      { ok: false, error: { code: "insert_failed", reason: insertErr.message } },
+      { ok: false, error: { code: "insert_failed", reason: msg } },
       { status: 500 }
     );
   }

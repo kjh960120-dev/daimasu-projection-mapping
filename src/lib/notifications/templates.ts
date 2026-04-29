@@ -23,7 +23,6 @@ interface CancelledArgs {
 interface ReminderArgs {
   reservation: Reservation;
   hoursOut: number;
-  cancelUrl: string;
 }
 
 const PALETTE = {
@@ -174,10 +173,7 @@ export function renderReminderEmail(args: ReminderArgs): { subject: string; html
     <p style="margin:0 0 16px;font-size:13px;color:${PALETTE.textMuted};">${escapeHtml(r.guest_name)} 様</p>
     <p style="margin:0 0 8px;font-size:14px;line-height:1.7;">${lang === "ja" ? "ご予約のお時間が近づいております。下記をご確認ください。" : "Your reservation is approaching. Please confirm the details below."}</p>
     ${summaryTable(r, lang)}
-    <p style="margin:16px 0 0;font-size:12px;color:${PALETTE.textMuted};line-height:1.7;">${lang === "ja" ? "ご都合が変わった場合は下記からキャンセルをお願いいたします。" : "If your plans change, please cancel via the link below."}</p>
-    <p style="margin:24px 0 0;text-align:center;">
-      <a href="${args.cancelUrl}" style="display:inline-block;padding:10px 22px;border:1px solid ${PALETTE.border};color:${PALETTE.textMuted};text-decoration:none;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;">${lang === "ja" ? "予約を変更" : "Change reservation"}</a>
-    </p>`;
+    <p style="margin:16px 0 0;font-size:12px;color:${PALETTE.textMuted};line-height:1.7;">${lang === "ja" ? "ご都合が変わった場合は、ご予約確認メール内のキャンセルリンクをご利用ください。" : "If your plans change, please use the cancel link in your original booking confirmation email."}</p>`;
 
   return { subject, html: shell(subject, body) };
 }
