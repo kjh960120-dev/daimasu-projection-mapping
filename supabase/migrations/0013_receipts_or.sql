@@ -44,12 +44,14 @@ create table if not exists receipts (
   grand_total_centavos        bigint not null check (grand_total_centavos >= 0),
   -- The settlement payment(s) that this OR represents (cash / card / mixed).
   settlement_method           text check (settlement_method in ('cash', 'card', 'gcash', 'mixed') or settlement_method is null),
-  -- Issuance metadata.
+  -- Issuance metadata. issued_by / voided_by store the admin email
+  -- as plain text — same convention as audit_log.actor — rather than
+  -- an FK, because admin_owners.email is the PK (not `id`) and the
+  -- value is informational, not relational.
   issued_at                   timestamptz not null default now(),
-  issued_by                   uuid references admin_owners(id),
-  -- Voiding (BIR-traceable; data is retained for audit, just flagged).
+  issued_by                   text,
   voided_at                   timestamptz,
-  voided_by                   uuid references admin_owners(id),
+  voided_by                   text,
   void_reason                 text,
   -- Sum-check trip-wire: the trio must sum to grand_total exactly.
   constraint receipts_total_consistency
@@ -110,7 +112,7 @@ create or replace function settle_with_receipt(
   p_vat                   bigint,
   p_grand_total           bigint,
   p_settlement_method     text,
-  p_issued_by             uuid
+  p_issued_by             text
 )
 returns receipts
 language plpgsql
@@ -142,7 +144,7 @@ begin
 end;
 $$;
 
-comment on function settle_with_receipt(uuid, bigint, bigint, bigint, bigint, text, uuid) is
+comment on function settle_with_receipt(uuid, bigint, bigint, bigint, bigint, text, text) is
   'Atomically issues an OR number and persists the receipt for a settled reservation.';
 
 -- ─── 5. RLS — same shape as audit_log ──────────────────────────────────────

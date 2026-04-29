@@ -320,15 +320,23 @@ export default async function ReservationDetailPage({
             value={reservation.guest_lang.toUpperCase()}
           />
           {(() => {
-            // Compute SVC + VAT breakdown for display. Persisted snapshot
-            // (after settle) lives in the receipts table; pre-settle we
-            // recompute from the booking-time price + party_size + deposit
-            // — same math the diner saw at checkout.
+            // SVC + VAT breakdown for display. Pre-settle: recomputed
+            // from the reservation snapshot (course_price + party_size +
+            // deposit_pct). Post-settle: snapshotted in the receipts row.
+            //
+            // Important: reservation.deposit_centavos and balance_centavos
+            // are the *menu-only* halves (the schema has a CHECK that they
+            // sum to total_centavos = course_price × party). The diner's
+            // grand-total liability is menu + SVC + VAT; the on-site
+            // amount the operator collects is therefore
+            //   on_site = grand_total - menu_only_deposit
+            // i.e. menu_balance + SVC + VAT, NOT just balance_centavos.
             const r = receiptBreakdown(
               reservation.course_price_centavos,
               reservation.party_size,
               reservation.deposit_pct
             );
+            const onSiteDue = r.grand_total_centavos - reservation.deposit_centavos;
             return (
               <>
                 <DataRow
@@ -353,8 +361,9 @@ export default async function ReservationDetailPage({
                   value={formatPHP(reservation.deposit_centavos, lang)}
                 />
                 <DataRow
-                  label={ti(lang, "残金 (店舗精算)", "Balance (on-site)")}
-                  value={formatPHP(reservation.balance_centavos, lang)}
+                  label={ti(lang, "店舗精算 (残金 + 税サ)", "On-site due (balance + tax/svc)")}
+                  value={formatPHP(onSiteDue, lang)}
+                  emphasis
                 />
                 {receipt && !receipt.voided_at && (
                   <DataRow

@@ -106,7 +106,7 @@ export async function POST(
         p_vat: r.vat_centavos,
         p_grand_total: r.grand_total_centavos,
         p_settlement_method: settlementMethod,
-        p_issued_by: null,
+        p_issued_by: admin.email,
       }
     );
     if (!rcptErr && receipt) {

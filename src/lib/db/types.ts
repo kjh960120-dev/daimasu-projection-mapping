@@ -186,6 +186,7 @@ export interface Receipt {
   grand_total_centavos: number;
   settlement_method: PaymentMethod | null;
   issued_at: string;
+  /** Admin email (audit_log.actor convention) — not an FK. */
   issued_by: string | null;
   voided_at: string | null;
   voided_by: string | null;

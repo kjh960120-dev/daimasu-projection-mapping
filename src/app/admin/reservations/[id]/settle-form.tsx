@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import type { Reservation, PaymentMethod } from "@/lib/db/types";
-import { formatPHP } from "@/lib/domain/reservation";
+import { formatPHP, receiptBreakdown } from "@/lib/domain/reservation";
 import type { AdminLang } from "@/lib/auth/admin-lang";
 import { NumPadInput } from "../../_components/num-pad-input";
 
@@ -27,8 +27,20 @@ export function SettleForm({
 }) {
   const ti = (ja: string, en: string) => (lang === "ja" ? ja : en);
   const [method, setMethod] = useState<PaymentMethod>("cash");
+  // On-site due = grand_total (menu+SVC+VAT) − deposit already paid.
+  // The reservation row's balance_centavos is menu-only and would
+  // undercollect by SVC+VAT amounts.
+  const breakdown = receiptBreakdown(
+    reservation.course_price_centavos,
+    reservation.party_size,
+    reservation.deposit_pct
+  );
+  const onSiteDueCentavos = Math.max(
+    0,
+    breakdown.grand_total_centavos - reservation.deposit_centavos
+  );
   const [amountPesos, setAmountPesos] = useState(
-    String(reservation.balance_centavos / 100)
+    String(onSiteDueCentavos / 100)
   );
   const [status, setStatus] = useState<"idle" | "pending" | "ok" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -66,8 +78,8 @@ export function SettleForm({
         {ti("精算する", "Mark as settled")}
       </p>
       <p className="text-sm text-text-secondary">
-        {ti("残金: ", "Balance owed: ")}
-        {formatPHP(reservation.balance_centavos, lang)}
+        {ti("店舗精算 (税サ込): ", "On-site due (incl. tax/svc): ")}
+        {formatPHP(onSiteDueCentavos, lang)}
       </p>
 
       <label className="flex flex-col gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-text-secondary">
@@ -92,8 +104,8 @@ export function SettleForm({
           onChange={setAmountPesos}
           label={ti("受領合計を入力", "Enter total received")}
           subText={ti(
-            `残金 ${formatPHP(reservation.balance_centavos, lang)}`,
-            `Balance ${formatPHP(reservation.balance_centavos, lang)}`
+            `店舗精算 ${formatPHP(onSiteDueCentavos, lang)} (税サ込)`,
+            `On-site due ${formatPHP(onSiteDueCentavos, lang)} (incl. tax/svc)`
           )}
           prefix="₱"
           allowDecimal
