@@ -17,6 +17,7 @@ import {
   verifyCancelToken,
   tokenMatchesHash,
 } from "@/lib/security/cancel-token";
+import { clientKey, limit, rateLimitHeaders } from "@/lib/security/rate-limit";
 import {
   hoursUntilService,
   refundAmountCentavos,
@@ -41,6 +42,17 @@ interface ReqBody {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate-limit cancellation attempts: a token-guessing attacker would
+  // burn unique tokens here. 30 attempts / IP / hour is well above any
+  // legit "I clicked the wrong refund tier" retry pattern.
+  const rl = limit("cancel", clientKey(req, "cancel"), 30, 60 * 60 * 1000);
+  if (!rl.ok) {
+    return new NextResponse(
+      JSON.stringify({ ok: false, error: "rate_limited" }),
+      { status: 429, headers: { ...rateLimitHeaders(rl), "Content-Type": "application/json" } }
+    );
+  }
+
   let body: ReqBody;
   try {
     body = (await req.json()) as ReqBody;

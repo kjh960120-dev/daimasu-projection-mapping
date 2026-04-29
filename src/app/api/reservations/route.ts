@@ -20,6 +20,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { adminClient } from "@/lib/db/clients";
 import { stripe, toStripeAmount } from "@/lib/stripe/client";
 import { issueCancelToken } from "@/lib/security/cancel-token";
+import { clientKey, limit, rateLimitHeaders } from "@/lib/security/rate-limit";
 import { createReservationSchema } from "@/lib/domain/schemas";
 import {
   serviceStartsAt,
@@ -39,6 +40,27 @@ type ApiError =
   | { code: "internal"; reason?: string };
 
 export async function POST(req: NextRequest) {
+  // 0. rate-limit: 5 booking attempts / IP / 10 min, plus 20 / IP / hour.
+  // Bot floods + competitive seat-sniping both die here. Honeypot stays
+  // active separately — bots that pass the rate cap also need a clean
+  // `website` field. Retry-After header tells well-behaved clients when
+  // to come back; bots ignore it and burn quota.
+  const ipKey = clientKey(req, "reservations");
+  const burst = limit("reservations:burst", ipKey, 5, 10 * 60 * 1000);
+  if (!burst.ok) {
+    return new NextResponse(
+      JSON.stringify({ ok: false, error: { code: "rate_limited" } }),
+      { status: 429, headers: { ...rateLimitHeaders(burst), "Content-Type": "application/json" } }
+    );
+  }
+  const hourly = limit("reservations:hourly", ipKey, 20, 60 * 60 * 1000);
+  if (!hourly.ok) {
+    return new NextResponse(
+      JSON.stringify({ ok: false, error: { code: "rate_limited" } }),
+      { status: 429, headers: { ...rateLimitHeaders(hourly), "Content-Type": "application/json" } }
+    );
+  }
+
   // 1. parse + validate
   let body: unknown;
   try {
