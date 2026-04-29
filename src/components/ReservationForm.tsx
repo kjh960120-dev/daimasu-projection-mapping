@@ -388,6 +388,25 @@ export default function ReservationForm() {
                 "Next: pay a 50% deposit via Stripe. The balance is settled on-site. 100% refund up to 48h before; 50% up to 24h."
               )}
             </p>
+            <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
+              {t(
+                <>
+                  ご予約に進むことで、
+                  <a href="/terms" className="text-gold underline underline-offset-2">ご予約規約</a>
+                  と
+                  <a href="/privacy" className="text-gold underline underline-offset-2">プライバシーポリシー</a>
+                  に同意したものとみなされます。
+                </>,
+                <>
+                  By proceeding, you agree to our
+                  {" "}
+                  <a href="/terms" className="text-gold underline underline-offset-2">Terms of Service</a>
+                  {" "} and {" "}
+                  <a href="/privacy" className="text-gold underline underline-offset-2">Privacy Policy</a>
+                  .
+                </>
+              )}
+            </p>
           </div>
 
           <button

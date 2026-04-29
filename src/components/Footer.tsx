@@ -77,6 +77,16 @@ export default function Footer() {
 
           <div className="gold-line w-16" />
 
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-text-secondary">
+            <a href="/privacy" className="transition-colors hover:text-gold">
+              {t("プライバシーポリシー", "Privacy Policy")}
+            </a>
+            <span aria-hidden="true" className="text-text-muted">·</span>
+            <a href="/terms" className="transition-colors hover:text-gold">
+              {t("ご予約規約", "Terms of Service")}
+            </a>
+          </div>
+
           <p className="text-xs text-text-secondary">
             &copy; {new Date().getFullYear()} DAIMASU. All rights reserved.
           </p>
