@@ -166,6 +166,41 @@ export interface Payment {
   created_at: string;
 }
 
+/**
+ * Bureau of Internal Revenue (BIR) Official Receipt record.
+ * One row per fully-settled reservation. Voided rows are kept for audit
+ * (5-year retention) — never hard-deleted.
+ *
+ * The breakdown trio (menu_subtotal + service_charge + vat) MUST sum to
+ * grand_total_centavos; a CHECK constraint enforces this at the DB level
+ * so accounting drift is caught on insert, not at audit time.
+ */
+export interface Receipt {
+  id: string;
+  reservation_id: string;
+  /** Formatted with the active series prefix, e.g. "DBM-00001234". */
+  or_number: string;
+  menu_subtotal_centavos: number;
+  service_charge_centavos: number;
+  vat_centavos: number;
+  grand_total_centavos: number;
+  settlement_method: PaymentMethod | null;
+  issued_at: string;
+  issued_by: string | null;
+  voided_at: string | null;
+  voided_by: string | null;
+  void_reason: string | null;
+}
+
+export interface ORSeries {
+  id: number;
+  prefix: string;
+  next_number: number;
+  active: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface ReservationMoney {
   reservation_id: string;
   service_date: string;

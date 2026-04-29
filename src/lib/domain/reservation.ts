@@ -104,6 +104,68 @@ export function priceBreakdown(
   return { total, deposit, balance };
 }
 
+/**
+ * Philippine restaurant receipt convention:
+ *
+ *   menu_subtotal              ← course_price × party_size  (VAT-exclusive)
+ *   service_charge = 10%       ← computed on menu_subtotal
+ *   vat_base = menu_subtotal + service_charge
+ *   vat = 12% of vat_base
+ *   grand_total = vat_base + vat
+ *
+ * Rationale:
+ *  - SVC 10% is industry standard in Manila and is shared with staff.
+ *    BIR Revenue Regulations No. 16-2005 § 4.114-1: SVC is part of the
+ *    gross receipts subject to VAT, hence we apply 12% on (subtotal+SVC).
+ *  - VAT 12% is the standard rate under NIRC § 106. Restaurants are not
+ *    among the VAT-exempt categories.
+ *  - All figures are in centavos and are rounded to integer at each step
+ *    so the receipt totals are exact (no fractional centavos drift).
+ *
+ * The deposit (Stripe checkout) is computed off `grand_total` so the
+ * 50% prepayment matches what the diner ultimately owes. The balance
+ * paid on-site is `grand_total - deposit_centavos`.
+ */
+export const SERVICE_CHARGE_PCT = 10;
+export const VAT_PCT = 12;
+
+export interface ReceiptBreakdown {
+  /** Pre-tax, pre-SVC menu total (= course_price × party_size). */
+  menu_subtotal_centavos: number;
+  /** 10% of menu_subtotal, rounded to integer centavos. */
+  service_charge_centavos: number;
+  /** 12% applied to (menu_subtotal + service_charge). */
+  vat_centavos: number;
+  /** Grand total inclusive of SVC + VAT. */
+  grand_total_centavos: number;
+  /** Stripe deposit charged at booking time. */
+  deposit_centavos: number;
+  /** Remainder paid on-site. */
+  balance_centavos: number;
+}
+
+export function receiptBreakdown(
+  coursePriceCentavos: number,
+  partySize: number,
+  depositPct: number
+): ReceiptBreakdown {
+  const menu_subtotal = coursePriceCentavos * partySize;
+  const service_charge = Math.round((menu_subtotal * SERVICE_CHARGE_PCT) / 100);
+  const vat_base = menu_subtotal + service_charge;
+  const vat = Math.round((vat_base * VAT_PCT) / 100);
+  const grand_total = vat_base + vat;
+  const deposit = Math.floor((grand_total * depositPct) / 100);
+  const balance = grand_total - deposit;
+  return {
+    menu_subtotal_centavos: menu_subtotal,
+    service_charge_centavos: service_charge,
+    vat_centavos: vat,
+    grand_total_centavos: grand_total,
+    deposit_centavos: deposit,
+    balance_centavos: balance,
+  };
+}
+
 /** Whether a reservation is still capacity-blocking (counts against seats). */
 export function blocksCapacity(status: ReservationStatus): boolean {
   return status === "pending_payment" || status === "confirmed";

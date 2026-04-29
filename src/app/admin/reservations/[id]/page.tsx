@@ -15,13 +15,14 @@ import { notFound } from "next/navigation";
 import { requireAdminOrRedirect } from "@/lib/auth/admin";
 import { getAdminLang, ti, type AdminLang } from "@/lib/auth/admin-lang";
 import { adminClient } from "@/lib/db/clients";
-import { formatPHP } from "@/lib/domain/reservation";
+import { formatPHP, receiptBreakdown } from "@/lib/domain/reservation";
 import type {
   NotificationLog,
   Payment,
+  Receipt,
   Reservation,
 } from "@/lib/db/types";
-import { mockReservations, mockPayments } from "../../preview-mode";
+import { mockReservations, mockPayments, mockReceipts } from "../../preview-mode";
 import { SettleForm } from "./settle-form";
 import { NoShowButton } from "./no-show-button";
 import { CancelWithRefundForm } from "./cancel-form";
@@ -63,6 +64,7 @@ export default async function ReservationDetailPage({
   let payments: Payment[] | null = null;
   let audits: AuditRow[] | null = null;
   let notifications: NotificationLog[] | null = null;
+  let receipt: Receipt | null = null;
   let repeat: RepeatStats = {
     total_visits: 0,
     last_visit: null,
@@ -73,6 +75,7 @@ export default async function ReservationDetailPage({
   if (PREVIEW_MODE) {
     reservation = mockReservations.find((r) => r.id === id) ?? null;
     payments = mockPayments.filter((p) => p.reservation_id === id);
+    receipt = mockReceipts.find((r) => r.reservation_id === id) ?? null;
     notifications = [];
     audits = [];
     if (reservation) {
@@ -105,6 +108,7 @@ export default async function ReservationDetailPage({
       { data: pRows },
       { data: aRows },
       { data: nRows },
+      { data: rcptRows },
     ] = await Promise.all([
       sb.from("reservations").select("*").eq("id", id).maybeSingle<Reservation>(),
       sb
@@ -127,11 +131,20 @@ export default async function ReservationDetailPage({
         .order("attempted_at", { ascending: false })
         .limit(20)
         .returns<NotificationLog[]>(),
+      sb
+        .from("receipts")
+        .select("*")
+        .eq("reservation_id", id)
+        .is("voided_at", null)
+        .order("issued_at", { ascending: false })
+        .limit(1)
+        .returns<Receipt[]>(),
     ]);
     reservation = rRow;
     payments = pRows;
     audits = aRows;
     notifications = nRows;
+    receipt = rcptRows && rcptRows.length > 0 ? rcptRows[0] : null;
 
     if (reservation) {
       // Two separate queries (Postgrest's `.or()` splits on commas, which is
@@ -306,18 +319,53 @@ export default async function ReservationDetailPage({
             label={ti(lang, "言語", "Lang")}
             value={reservation.guest_lang.toUpperCase()}
           />
-          <DataRow
-            label={ti(lang, "コース合計", "Course total")}
-            value={formatPHP(reservation.total_centavos, lang)}
-          />
-          <DataRow
-            label={ti(lang, "デポジット (受領)", "Deposit (paid)")}
-            value={formatPHP(reservation.deposit_centavos, lang)}
-          />
-          <DataRow
-            label={ti(lang, "残金 (店舗精算)", "Balance (on-site)")}
-            value={formatPHP(reservation.balance_centavos, lang)}
-          />
+          {(() => {
+            // Compute SVC + VAT breakdown for display. Persisted snapshot
+            // (after settle) lives in the receipts table; pre-settle we
+            // recompute from the booking-time price + party_size + deposit
+            // — same math the diner saw at checkout.
+            const r = receiptBreakdown(
+              reservation.course_price_centavos,
+              reservation.party_size,
+              reservation.deposit_pct
+            );
+            return (
+              <>
+                <DataRow
+                  label={ti(lang, "コース小計", "Menu subtotal")}
+                  value={formatPHP(r.menu_subtotal_centavos, lang)}
+                />
+                <DataRow
+                  label={ti(lang, "サービス料 (10%)", "Service charge (10%)")}
+                  value={formatPHP(r.service_charge_centavos, lang)}
+                />
+                <DataRow
+                  label={ti(lang, "VAT (12%)", "VAT (12%)")}
+                  value={formatPHP(r.vat_centavos, lang)}
+                />
+                <DataRow
+                  label={ti(lang, "合計 (税サ込)", "Grand total")}
+                  value={formatPHP(r.grand_total_centavos, lang)}
+                  emphasis
+                />
+                <DataRow
+                  label={ti(lang, "デポジット (受領)", "Deposit (paid)")}
+                  value={formatPHP(reservation.deposit_centavos, lang)}
+                />
+                <DataRow
+                  label={ti(lang, "残金 (店舗精算)", "Balance (on-site)")}
+                  value={formatPHP(reservation.balance_centavos, lang)}
+                />
+                {receipt && !receipt.voided_at && (
+                  <DataRow
+                    label={ti(lang, "OR 番号", "OR no.")}
+                    value={receipt.or_number}
+                    emphasis
+                  />
+                )}
+              </>
+            );
+          })()}
           {reservation.notes && (
             <div className="mt-4 border-t border-border pt-3">
               <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary">
@@ -530,11 +578,19 @@ export default async function ReservationDetailPage({
   );
 }
 
-function DataRow({ label, value }: { label: string; value: string }) {
+function DataRow({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+}) {
   return (
     <div className="flex justify-between gap-4 border-b border-border/40 py-2 text-sm last:border-b-0">
-      <span className="text-text-muted">{label}</span>
-      <span className="text-right text-foreground">{value}</span>
+      <span className={emphasis ? "font-semibold text-foreground" : "text-text-muted"}>{label}</span>
+      <span className={emphasis ? "text-right font-semibold text-foreground" : "text-right text-foreground"}>{value}</span>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import type {
   RevenueMonthly,
   Payment,
   NotificationLog,
+  Receipt,
 } from "@/lib/db/types";
 
 export const PREVIEW_FLAG = "preview";
@@ -371,5 +372,24 @@ export const mockNotificationFailures: NotificationLog[] = [
     recipient: "-100000000000",
     error_message: "Telegram: 401 unauthorized — bot token rotated",
     attempted_at: daysFromNow(-2, 9, 15),
+  },
+];
+
+export const mockReceipts: Receipt[] = [
+  // Smith John (id 444…) — fully settled, OR issued.
+  {
+    id: "rcpt-1",
+    reservation_id: "44444444-4444-4444-4444-444444444444",
+    or_number: "DBM-00000042",
+    menu_subtotal_centavos: 2_400_000,
+    service_charge_centavos: 240_000,
+    vat_centavos: 316_800,
+    grand_total_centavos: 2_956_800,
+    settlement_method: "card",
+    issued_at: daysFromNow(-1, 21, 0),
+    issued_by: null,
+    voided_at: null,
+    voided_by: null,
+    void_reason: null,
   },
 ];

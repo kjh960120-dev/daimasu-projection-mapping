@@ -13,8 +13,11 @@ import {
   refundAmountCentavos,
   statusAfterCancel,
   priceBreakdown,
+  receiptBreakdown,
   blocksCapacity,
   serviceStartsAt,
+  SERVICE_CHARGE_PCT,
+  VAT_PCT,
 } from "@/lib/domain/reservation";
 
 const POLICY = { refund_full_hours: 48, refund_partial_hours: 24 };
@@ -132,5 +135,62 @@ describe("hoursUntilService — sign + magnitude", () => {
   it("past booking → negative hours", () => {
     const past = new Date(Date.now() - 5 * 3_600_000);
     expect(hoursUntilService(past)).toBeCloseTo(-5, 0);
+  });
+});
+
+describe("receiptBreakdown — PH VAT + service charge math", () => {
+  it("constants match BIR / industry standard", () => {
+    expect(VAT_PCT).toBe(12);
+    expect(SERVICE_CHARGE_PCT).toBe(10);
+  });
+
+  it("computes the spec example exactly (₱8,000 × 4 = ₱32,000 menu)", () => {
+    // 4 guests at ₱8,000 each
+    const r = receiptBreakdown(800_000, 4, 50);
+    // menu subtotal: ₱32,000.00
+    expect(r.menu_subtotal_centavos).toBe(3_200_000);
+    // SVC: 10% of ₱32,000 = ₱3,200.00
+    expect(r.service_charge_centavos).toBe(320_000);
+    // VAT base: ₱32,000 + ₱3,200 = ₱35,200; VAT 12% = ₱4,224.00
+    expect(r.vat_centavos).toBe(422_400);
+    // grand total: ₱35,200 + ₱4,224 = ₱39,424.00
+    expect(r.grand_total_centavos).toBe(3_942_400);
+    // 50% deposit on grand total = ₱19,712.00
+    expect(r.deposit_centavos).toBe(1_971_200);
+    // balance = grand_total - deposit = ₱19,712.00
+    expect(r.balance_centavos).toBe(1_971_200);
+  });
+
+  it("sums to grand total without centavo drift (single guest)", () => {
+    const r = receiptBreakdown(800_000, 1, 50);
+    expect(
+      r.menu_subtotal_centavos +
+        r.service_charge_centavos +
+        r.vat_centavos
+    ).toBe(r.grand_total_centavos);
+    expect(r.deposit_centavos + r.balance_centavos).toBe(r.grand_total_centavos);
+  });
+
+  it("rounds VAT and SVC consistently across odd party sizes (no fractional drift)", () => {
+    for (let n = 1; n <= 8; n++) {
+      const r = receiptBreakdown(800_000, n, 50);
+      expect(
+        r.menu_subtotal_centavos +
+          r.service_charge_centavos +
+          r.vat_centavos
+      ).toBe(r.grand_total_centavos);
+      expect(r.deposit_centavos + r.balance_centavos).toBe(r.grand_total_centavos);
+    }
+  });
+
+  it("handles a non-divisible price without negative balance", () => {
+    // 7777 centavos × 3 = 23331 → SVC 2333.1 → 2333 (rounded) → VAT base 25664
+    // VAT 12% = 3079.68 → 3080 (rounded) → grand 28744
+    const r = receiptBreakdown(7_777, 3, 50);
+    expect(r.menu_subtotal_centavos).toBe(23_331);
+    expect(r.service_charge_centavos).toBe(2_333);
+    expect(r.vat_centavos).toBe(3_080);
+    expect(r.grand_total_centavos).toBe(28_744);
+    expect(r.balance_centavos).toBeGreaterThanOrEqual(0);
   });
 });
