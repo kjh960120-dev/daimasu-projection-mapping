@@ -158,7 +158,7 @@ export default async function TodayServiceSheetPage({
         <header className="mb-6 flex flex-wrap items-baseline justify-between gap-3 border-b border-border pb-4 print:border-black/30">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-gold print:text-black/70">
-              DAIMASU 大桝 BAR · {ti(lang, "サービス表", "Service sheet")}
+              DAIMASU BAR · {ti(lang, "サービス表", "Service sheet")}
             </p>
             <h2 className="mt-1 font-[family-name:var(--font-noto-serif)] text-2xl tracking-[0.04em] print:text-3xl">
               {dateLabel}
@@ -214,7 +214,8 @@ export default async function TodayServiceSheetPage({
                 {ti(lang, "本日のサプライズ・お祝い", "Today's celebrations")}
               </p>
               <span className="font-mono text-[12px] text-text-secondary print:text-black/60">
-                {bookings.filter((b) => b.celebration).length}件
+                {bookings.filter((b) => b.celebration).length}
+                {ti(lang, "件", "")}
               </span>
             </header>
             <ul className="divide-y divide-gold/20 print:divide-black/30">
@@ -237,8 +238,9 @@ export default async function TodayServiceSheetPage({
                       <span className="leading-snug text-foreground print:text-black">
                         <span className="font-semibold">{b.guest_name}</span>
                         <span className="ml-2 admin-meta">
-                          {b.party_size}名
-                          {b.seat_numbers && ` · 席 ${b.seat_numbers.join(",")}`}
+                          {b.party_size}
+                          {ti(lang, "名", " pax")}
+                          {b.seat_numbers && ` · ${ti(lang, "席", "seat")} ${b.seat_numbers.join(",")}`}
                         </span>
                         <div className="mt-0.5 admin-body normal-case tracking-normal">
                           {celebrationSummaryLine(c, lang)}

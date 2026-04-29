@@ -20,7 +20,7 @@ export function LangToggle({ current }: { current: AdminLang }) {
     >
       <Languages size={14} />
       <span className="font-mono text-[12px] font-medium tracking-[0.16em]">
-        {current === "ja" ? "EN" : "日本語"}
+        {current === "ja" ? "EN" : "JA"}
       </span>
     </button>
   );

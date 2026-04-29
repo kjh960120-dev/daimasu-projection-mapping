@@ -23,8 +23,8 @@ export default async function ClosedDatesPage() {
   let upcoming: ClosedDate[] = [];
   if (PREVIEW_MODE) {
     upcoming = [
-      { closed_date: shiftIsoDate(today, 5), reason: "プライベートイベント (full buyout)", created_at: new Date().toISOString() },
-      { closed_date: shiftIsoDate(today, 12), reason: "店休", created_at: new Date().toISOString() },
+      { closed_date: shiftIsoDate(today, 5), reason: "Private event (full buyout)", created_at: new Date().toISOString() },
+      { closed_date: shiftIsoDate(today, 12), reason: "Closed", created_at: new Date().toISOString() },
     ];
   } else {
     await requireAdminOrRedirect();

@@ -244,7 +244,10 @@ function CelebrationCard({
           <span className="ml-3 admin-body font-medium text-foreground">
             {reservation.guest_name}
           </span>
-          <span className="ml-2 admin-meta">{reservation.party_size}名</span>
+          <span className="ml-2 admin-meta">
+            {reservation.party_size}
+            {ti(lang, "名", " pax")}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <span className="border border-gold/60 bg-gold/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.10em] text-gold">

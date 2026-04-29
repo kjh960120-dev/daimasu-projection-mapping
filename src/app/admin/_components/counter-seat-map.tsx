@@ -258,7 +258,7 @@ function SeatSquare({
   return (
     <div
       className={`relative flex flex-col items-center justify-center border-2 border-red-500/60 bg-red-500/[0.12] text-red-400 ${sizeCls}`}
-      title={`${booking.guest_name} (${booking.party_size}名)`}
+      title={`${booking.guest_name} (${booking.party_size}${ti(lang, "名", " pax")})`}
     >
       <X size={compact ? 22 : 32} strokeWidth={2.5} aria-hidden="true" />
       <span
