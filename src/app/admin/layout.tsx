@@ -38,14 +38,18 @@ export default async function AdminLayout({
         <div className="lg:grid lg:min-h-screen lg:grid-cols-[220px_1fr] print:!block">
           {/* Mobile top bar */}
           <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur lg:hidden print:hidden">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-gold">
-                DAIMASU
-              </p>
-              <p className="text-[11px] tracking-[0.12em] text-text-secondary">
-                {ti(lang, "管理画面", "ADMIN PANEL")}
-              </p>
-            </div>
+            <Link href="/admin" aria-label={ti(lang, "DAIMASU 管理画面", "DAIMASU Admin")} className="block">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static admin asset, no Next/Image overhead needed */}
+              <img
+                src={theme === "dark" ? "/images/admin/logo-dark.png" : "/images/admin/logo-light.png"}
+                alt="DAIMASU"
+                width={140}
+                height={68}
+                className="h-9 w-auto"
+                loading="eager"
+                decoding="sync"
+              />
+            </Link>
             <div className="flex items-center gap-3">
               <ThemeToggle current={theme} />
               <LangToggle current={lang} />
@@ -85,14 +89,25 @@ export default async function AdminLayout({
 
           {/* Desktop sidebar */}
           <aside className="hidden flex-col border-r border-border bg-surface p-5 lg:flex print:hidden">
-            <div className="mb-6 border-b border-border pb-4">
-              <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-gold">
-                DAIMASU
-              </p>
-              <p className="mt-1 text-[12px] tracking-[0.12em] text-text-secondary">
+            <Link
+              href="/admin"
+              aria-label={ti(lang, "DAIMASU 管理画面", "DAIMASU Admin")}
+              className="mb-5 block border-b border-border pb-4"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- static admin asset */}
+              <img
+                src={theme === "dark" ? "/images/admin/logo-dark.png" : "/images/admin/logo-light.png"}
+                alt="DAIMASU"
+                width={360}
+                height={176}
+                className="h-auto w-full max-w-[180px]"
+                loading="eager"
+                decoding="sync"
+              />
+              <p className="mt-2 text-[11px] tracking-[0.12em] text-text-secondary">
                 {ti(lang, "管理画面", "ADMIN PANEL")}
               </p>
-            </div>
+            </Link>
             <nav className="flex flex-col gap-1 text-sm">
               <NavLink
                 href="/admin/reservations/new"
