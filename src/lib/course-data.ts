@@ -568,8 +568,203 @@ export const INTERCOM_CODEWORDS = {
 } as const;
 
 /* ------------------------------------------------------------------------- */
+/* CELEBRATION TIMING (Slot 8 dynamic schedule by celebration count)         */
+/* ------------------------------------------------------------------------- */
+
+export type CelebrationCount = 0 | 1 | 2 | 3 | 4;
+
+export const CELEBRATION_TIMING = {
+  /**
+   * Per-round duration (seconds), inserted into Slot 8.
+   * standard: full ceremony (announce + video + serve + applause + close)
+   * compressed: forced shorter when slow pace + 4 celebrations combination
+   */
+  perRoundDurationSec: {
+    standard: 140, // 10s announce + 30s video + 30s cake serve + 60s applause/photo + 10s close
+    compressed: 90, // slow pace + 4 celebrations override
+  },
+
+  /**
+   * Total Slot 8 duration in minutes by celebration count.
+   * Includes ice cream serve, all rounds (sequential), and post-round wrap.
+   */
+  slot8DurationMinByCount: {
+    0: 8, // base only — ice cream serve + ambient loop
+    1: 11,
+    2: 14,
+    3: 17,
+    4: 19, // worst case (may stretch to 22 with photo overrun)
+    "4_max": 22,
+  } as Record<string, number>,
+
+  /**
+   * Ending start time per celebration count (1st seating).
+   * Slot 8 trigger 18:37 + slot8 duration = ending start.
+   * 2nd seating: same offsets +2:30.
+   */
+  endingStartTime1st: {
+    0: "18:46", // 18:37 + 8 min loop minimum
+    1: "18:49",
+    2: "18:52",
+    3: "18:55",
+    4: "18:59", // hard cap before 19:00 forced ending
+  } as Record<string, string>,
+  endingStartTime2nd: {
+    0: "21:16",
+    1: "21:19",
+    2: "21:22",
+    3: "21:25",
+    4: "21:29",
+  } as Record<string, string>,
+
+  /**
+   * Effective turnaround minutes available between 1st seating ending and
+   * 2nd seating doors (target 20:00). Tighter when more celebrations.
+   * 60 min = 1st seating ends 19:00 (4 celebrations); 74 min = ends 18:46 (0).
+   */
+  turnaroundAvailableMin: {
+    0: 74,
+    1: 71,
+    2: 68,
+    3: 65,
+    4: 60, // exactly 60 min — pre-bill drop mandatory
+  } as Record<string, number>,
+
+  /**
+   * Cake release sequence within Slot 8 (relative to Slot 8 trigger T+0).
+   * Format: "M:SS" — when KITCHEN releases each cake plate to RUNNER.
+   * RUNNER lights candle at pickup (NOT kitchen).
+   */
+  cakeReleaseSequence: {
+    1: [{ round: 1, releaseAt: "1:30" }],
+    2: [
+      { round: 1, releaseAt: "1:30" },
+      { round: 2, releaseAt: "3:30" },
+    ],
+    3: [
+      { round: 1, releaseAt: "1:30" },
+      { round: 2, releaseAt: "3:30" },
+      { round: 3, releaseAt: "5:30" },
+    ],
+    4: [
+      { round: 1, releaseAt: "1:30" },
+      { round: 2, releaseAt: "3:30" },
+      { round: 3, releaseAt: "5:30" },
+      { round: 4, releaseAt: "7:30" },
+    ],
+  } as Record<number, Array<{ round: number; releaseAt: string }>>,
+
+  /**
+   * Per-round beat structure (T+0 = round start within Slot 8 ceremony).
+   * Used by kitchen display to know what is happening every few seconds.
+   */
+  roundBeats: [
+    { offsetSec: 0, beat: "announce", actor: "COUNTER", description: "Speak the celebration announce line, holding mic eye-contact." },
+    { offsetSec: 10, beat: "video-start", actor: "COUNTER", description: "Press B to trigger 8b video (or generic loop for non-Birthday types)." },
+    { offsetSec: 10, beat: "cake-serve", actor: "RUNNER", description: "Carry cake-on-candle to celebrant table; light candle at pickup." },
+    { offsetSec: 26, beat: "firework-applause", actor: "COUNTER+ROOM", description: "At ~16s into video (firework beat), lead applause; the room joins." },
+    { offsetSec: 40, beat: "video-end", actor: "—", description: "Video ends; cake remains lit on table." },
+    { offsetSec: 40, beat: "photo-window", actor: "RUNNER", description: "Offer photo (30s window); booker phone preferred." },
+    { offsetSec: 130, beat: "close-line", actor: "COUNTER", description: "Brief close: \"On behalf of DAIMASU, happy [type], [Name].\"" },
+    { offsetSec: 140, beat: "round-complete", actor: "COUNTER", description: 'Push intercom: "Counter to all — Round R complete." Move to next round.' },
+  ],
+
+  /**
+   * Booking-time policy: which reservation states arm Slot 8 visual.
+   */
+  bookingArmCondition:
+    "Reservation `celebration` field is one of: birthday, anniversary, proposal, milestone, business, farewell, other (i.e. != 'none').",
+
+  /**
+   * Soft-cap policy on celebrations per seating (manager override possible).
+   * Keeps the room manageable for the 2-staff floor + single bar table.
+   */
+  softCapPerSeating: 2, // recommended max
+  hardCapPerSeating: 4, // absolute max (D scenario, all four pairs)
+
+  /**
+   * Slow-pace + max celebrations combination override.
+   * If COUNTER declared "slow pace" at slot 1-2 AND celebration count == 4,
+   * Slot 8 ceremony rounds compress from 140s to 90s each.
+   */
+  slowPaceCompressionTrigger: {
+    paceProfile: "slow",
+    celebrationCountThreshold: 4,
+    compressionToSec: 90,
+  },
+} as const;
+
+/* ------------------------------------------------------------------------- */
 /* HELPERS                                                                   */
 /* ------------------------------------------------------------------------- */
+
+/**
+ * Get total Slot 8 duration in minutes for a given celebration count.
+ */
+export function getSlot8Duration(count: CelebrationCount): number {
+  return CELEBRATION_TIMING.slot8DurationMinByCount[String(count)];
+}
+
+/**
+ * Get the actual Ending video start time, given the celebration count.
+ * Returns "HH:MM" string; defaults to 1st seating.
+ */
+export function getEndingTime(
+  count: CelebrationCount,
+  seating: 1 | 2 = 1
+): string {
+  const map =
+    seating === 1
+      ? CELEBRATION_TIMING.endingStartTime1st
+      : CELEBRATION_TIMING.endingStartTime2nd;
+  return map[String(count)];
+}
+
+/**
+ * Get the available turnaround minutes between 1st seating end and 2nd
+ * seating doors (20:00) given celebration count.
+ */
+export function getTurnaroundMinutes(count: CelebrationCount): number {
+  return CELEBRATION_TIMING.turnaroundAvailableMin[String(count)];
+}
+
+/**
+ * Get the cake-release schedule (within Slot 8) for given celebration count.
+ */
+export function getCakeReleaseSchedule(
+  count: CelebrationCount
+): Array<{ round: number; releaseAt: string }> {
+  return CELEBRATION_TIMING.cakeReleaseSequence[count] || [];
+}
+
+/**
+ * Determine effective per-round duration (seconds), accounting for slow
+ * pace + 4-celebration compression rule.
+ */
+export function getEffectiveRoundDuration(
+  count: CelebrationCount,
+  paceProfile: "fast" | "average" | "slow"
+): number {
+  const trigger = CELEBRATION_TIMING.slowPaceCompressionTrigger;
+  if (
+    paceProfile === trigger.paceProfile &&
+    count >= (trigger.celebrationCountThreshold as CelebrationCount)
+  ) {
+    return trigger.compressionToSec;
+  }
+  return CELEBRATION_TIMING.perRoundDurationSec.standard;
+}
+
+/**
+ * Check whether a reservation should arm the celebration video slot (8b).
+ * Returns true if the celebration field is anything other than 'none'.
+ */
+export function shouldArmCelebrationSlot(
+  celebrationId: string | null | undefined
+): boolean {
+  if (!celebrationId) return false;
+  return celebrationId !== "none";
+}
 
 /**
  * Get the slot active at a given clock time (HH:MM).
