@@ -97,8 +97,8 @@ const PRACTICAL_INFO = [
     icon: CalendarClock,
     label: { ja: "カイセキ劇場", en: "Kaiseki Seatings" },
     value: {
-      ja: "1部 17:30〜19:00 / 2部 19:30〜21:00",
-      en: "Seating 1: 17:30–19:00 · Seating 2: 19:30–21:00",
+      ja: "1部 17:30〜19:00 / 2部 20:00〜21:30",
+      en: "Seating 1: 17:30–19:00 · Seating 2: 20:00–21:30",
     },
   },
   {

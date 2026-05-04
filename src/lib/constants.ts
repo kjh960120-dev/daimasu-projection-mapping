@@ -323,8 +323,8 @@ export const RESTAURANT_INFO = {
     ja: CONTACT.address.full.ja,
   },
   hours: {
-    en: "Tuesday – Sunday · 17:30 / 19:30 seatings · Closed Mondays",
-    ja: "火〜日・17:30/19:30 の二部制・月曜定休",
+    en: "Tuesday – Sunday · 17:30 / 20:00 seatings · Closed Mondays",
+    ja: "火〜日・17:30/20:00 の二部制・月曜定休",
   },
   cancellation: {
     en: "Full refund if cancelled 24 hours before. Same-day no-shows are charged in full.",
