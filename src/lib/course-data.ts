@@ -22,8 +22,17 @@
  * Plating deadline rule: ready-at-pass = slot trigger − 60 seconds.
  */
 
-export type HoldState = "cold" | "ambient" | "warm" | "hot" | "frozen" | "n/a";
+export type HoldState = "cold" | "ambient" | "warm" | "hot" | "n/a";
 export type CoverScenario = "A" | "B" | "C" | "D";
+export type Seating = 1 | 2;
+
+/**
+ * Narration trigger — when COUNTER speaks the line relative to the slot's
+ * story video. From course_narration v2.1 §preamble:
+ *   "Pre-video"  = 1 second before the story video begins.
+ *   "Post-video" = immediately after the story ends, before the loop softens.
+ */
+export type NarrationTrigger = "pre-video-1s" | "post-video-1s" | "n/a";
 
 export interface CourseTiming {
   /** Slot index (0 = Welcome, 1–8 = courses, 9 = Ending). */
@@ -51,7 +60,11 @@ export interface CoverPlatingTime {
   D: number; // 8 covers
 }
 
-export interface CourseEntry {
+/* ------------------------------------------------------------------------- */
+/* COURSE ENTRY — narration is invariant-paired with hasNarration             */
+/* ------------------------------------------------------------------------- */
+
+interface CourseEntryBase {
   slot: number;
   /** Course number; null for Welcome / Ending. */
   course: number | null;
@@ -60,16 +73,12 @@ export interface CourseEntry {
   /** For multi-component courses (e.g., 春の前菜三種, 刺身三種). */
   components?: Array<{ ja: string; en: string; note?: string }>;
   hold: HoldState;
-  /** True if this course / slot has a story video that triggers narration. */
-  hasNarration: boolean;
-  /** Counter narration verbatim (English, from course_narration v2.1). */
-  narration: string | null;
-  /** Trigger timing (relative to slot trigger T 0). */
-  narrationTrigger:
-    | "pre-video-15s"
-    | "post-video-1s"
-    | "during-video-5s"
-    | "n/a";
+  /**
+   * Optional cap on time the plate may sit on the pass before quality
+   * degrades (e.g. Slot 8 ice cream melts: never on the pass more than 90 s).
+   * Manual: kitchen_v2.0 §5.8 / unified §5.8 cue.
+   */
+  holdMaxSec?: number;
   /** Owly story-video beat description. */
   storyBeat: string | null;
   /** Owly loop-video beat description. */
@@ -82,6 +91,25 @@ export interface CourseEntry {
   /** Operational notes for kitchen / runner. */
   notes?: string[];
 }
+
+/**
+ * Discriminated union over `hasNarration` so that `narration` and
+ * `narrationTrigger` are guaranteed non-null when `hasNarration` is true,
+ * and forced to `null` / `"n/a"` when false. Eliminates the
+ * "narration string but trigger n/a" invariant bug class.
+ */
+export type CourseEntry =
+  | (CourseEntryBase & {
+      hasNarration: true;
+      /** Counter narration verbatim (English, from course_narration v2.1). */
+      narration: string;
+      narrationTrigger: Exclude<NarrationTrigger, "n/a">;
+    })
+  | (CourseEntryBase & {
+      hasNarration: false;
+      narration: null;
+      narrationTrigger: "n/a";
+    });
 
 /* ------------------------------------------------------------------------- */
 /* SEATING SCHEDULE                                                          */
@@ -173,7 +201,7 @@ export const COURSES: CourseEntry[] = [
     hasNarration: true,
     narration:
       "Welcome to DAIMASU. That's Owly — our host, on the wall. He's about to set this table eight times tonight. Watch closely.",
-    narrationTrigger: "pre-video-15s",
+    narrationTrigger: "pre-video-1s",
     storyBeat:
       "Golden particles. Owly straightens his bow tie, draws a circle of light with his feather pen, winks.",
     loopBeat: "Golden ambient particles; Owly polishes his monocle in the corner.",
@@ -456,7 +484,13 @@ export const COURSES: CourseEntry[] = [
     course: 8,
     category: { ja: "甘味", en: "Kanmi (Dessert)" },
     dish: { ja: "抹茶アイス", en: "Matcha ice cream" },
-    hold: "frozen",
+    /**
+     * "cold" not "frozen" — kitchen_v2.0 §5.8 cue: "Scoops sit on chilled
+     * bowls; never on the pass more than 90 s." The dish is melting on the
+     * pass; we hold cold and cap the pass-time hard at 90 s.
+     */
+    hold: "cold",
+    holdMaxSec: 90,
     hasNarration: true,
     narration:
       "One small scoop survived the sugar fog! Matcha ice — bitter first, then sweet. Take your time.",
@@ -468,7 +502,7 @@ export const COURSES: CourseEntry[] = [
       slot: 8,
       course: 8,
       storyVideoSec: 60,
-      loopMin: "variable", // 8 to 22 min depending on celebration count
+      loopMin: "variable", // 7 (A/B/C base) – 19 (D + 4 cel) min, worst-case ~33 min
       triggerTime1st: "18:37",
       triggerTime2nd: "21:07",
       platingReadyAt1st: "18:36",
@@ -477,10 +511,10 @@ export const COURSES: CourseEntry[] = [
     platingTime: { A: 120, B: 180, C: 240, D: 300 },
     trips: { A: 1, B: 1, C: 2, D: 2 },
     notes: [
-      "Scoops sit on chilled bowls; never on the pass more than 90 s.",
-      "Up to 4 sequential celebration rounds inserted into Slot 8 (worst case ~19 min total Slot 8).",
-      "Each celebration round: 30 s 8b video + cake-on-candle + Owly card + photo.",
-      "Cake plates pre-staged in cake fridge during Slot 7; candles inserted but unlit.",
+      "Scoops sit on chilled bowls; never on the pass more than 90 s (holdMaxSec).",
+      "Up to 4 sequential celebration rounds inserted into Slot 8 (D worst case ~19 min total Slot 8, photo overrun up to ~33 min).",
+      "Each celebration round: announce + 30 s 8b video + cake-on-candle + Owly card + photo + closing line (~2.5 min).",
+      "Cake plates pre-staged in cake fridge during 17:25 mise; candles inserted but unlit.",
       "RUNNER lights candle at pickup (not Kitchen).",
       "RUNNER pre-bill drop (Tables A–D) during this slot — silent face-down placement.",
     ],
@@ -496,7 +530,7 @@ export const COURSES: CourseEntry[] = [
     hasNarration: true,
     narration:
       "Eight courses... one small magnificent owl... one quiet evening of yours. Thank you. Until we meet again.",
-    narrationTrigger: "during-video-5s",
+    narrationTrigger: "post-video-1s",
     storyBeat:
       "All course props as light traces racing past; Owly bows; draws a final circle of light; fades.",
     loopBeat: "Golden bokeh particles; Owly's bow tie and monocle floating, glinting.",
@@ -573,6 +607,30 @@ export const INTERCOM_CODEWORDS = {
 
 export type CelebrationCount = 0 | 1 | 2 | 3 | 4;
 
+/**
+ * Per-scenario base Slot 8 minutes (no celebrations).
+ * Source: unified §5.8.4 + §5.8 capacity table — A/B/C base ~7 min,
+ * D base ~9 min (8-cover scoop time + cleanup is the differentiator).
+ */
+const SLOT8_BASE_MIN_BY_SCENARIO: Record<CoverScenario, number> = {
+  A: 7,
+  B: 7,
+  C: 7,
+  D: 9,
+};
+
+/**
+ * Standard ceremonial round adder (announce + 30 s video + cake + photo +
+ * applause + closing). Source: unified §5.8.4 "~2.5 min per table".
+ */
+const STANDARD_ROUND_MIN = 2.5;
+
+/**
+ * Compressed round seconds, used when slow pace + 4 celebrations triggers
+ * the §W6 compression override.
+ */
+const COMPRESSED_ROUND_SEC = 90;
+
 export const CELEBRATION_TIMING = {
   /**
    * Per-round duration (seconds), inserted into Slot 8.
@@ -580,79 +638,69 @@ export const CELEBRATION_TIMING = {
    * compressed: forced shorter when slow pace + 4 celebrations combination
    */
   perRoundDurationSec: {
-    standard: 140, // 10s announce + 30s video + 30s cake serve + 60s applause/photo + 10s close
-    compressed: 90, // slow pace + 4 celebrations override
+    standard: 150, // 2.5 min: 10s announce + 30s video + 30s cake serve + 60s applause/photo + 20s close
+    compressed: COMPRESSED_ROUND_SEC, // slow pace + 4 celebrations override
   },
 
   /**
-   * Total Slot 8 duration in minutes by celebration count.
-   * Includes ice cream serve, all rounds (sequential), and post-round wrap.
+   * Total Slot 8 duration in minutes, indexed by **scenario × celebration
+   * count**. Manual reference (unified §5.8.4):
+   *   A: base 7 → +1 round ≈ 9.5
+   *   B: base 7 → +2 rounds ≈ 12
+   *   C: base 7 → +3 rounds ≈ 14.5
+   *   D: base 9 → +4 rounds ≈ 19 (worst case ~33 with photo overrun)
+   * Cells unreachable per CAPACITY_MATRIX maxCelebrationRounds are `null`.
    */
-  slot8DurationMinByCount: {
-    0: 8, // base only — ice cream serve + ambient loop
-    1: 11,
-    2: 14,
-    3: 17,
-    4: 19, // worst case (may stretch to 22 with photo overrun)
-    "4_max": 22,
-  } as Record<string, number>,
+  slot8DurationMinByScenarioAndCount: {
+    A: { 0: 7, 1: 9.5, 2: null, 3: null, 4: null },
+    B: { 0: 7, 1: 9.5, 2: 12, 3: null, 4: null },
+    C: { 0: 7, 1: 9.5, 2: 12, 3: 14.5, 4: null },
+    D: { 0: 9, 1: 11.5, 2: 14, 3: 16.5, 4: 19 },
+  } as Record<CoverScenario, Record<CelebrationCount, number | null>>,
 
   /**
-   * Ending start time per celebration count (1st seating).
-   * Slot 8 trigger 18:37 + slot8 duration = ending start.
-   * 2nd seating: same offsets +2:30.
+   * Realistic worst-case minutes (D scenario) with photo overrun absorbed.
+   * Manual: unified §5.8.4 wrap "~19:08-19:10" → ~31–33 min from 18:37.
+   * Used for "never run later than ~19:12" budget guardrail.
    */
-  endingStartTime1st: {
-    0: "18:46", // 18:37 + 8 min loop minimum
-    1: "18:49",
-    2: "18:52",
-    3: "18:55",
-    4: "18:59", // hard cap before 19:00 forced ending
-  } as Record<string, string>,
-  endingStartTime2nd: {
-    0: "21:16",
-    1: "21:19",
-    2: "21:22",
-    3: "21:25",
-    4: "21:29",
-  } as Record<string, string>,
+  slot8DurationWorstCaseMin: {
+    D: { 4: 33 }, // 18:37 + 33 = 19:10 absolute hard ceiling
+  } as Record<CoverScenario, Partial<Record<CelebrationCount, number>>>,
 
   /**
-   * Effective turnaround minutes available between 1st seating ending and
-   * 2nd seating doors (target 20:00). Tighter when more celebrations.
-   * 60 min = 1st seating ends 19:00 (4 celebrations); 74 min = ends 18:46 (0).
-   */
-  turnaroundAvailableMin: {
-    0: 74,
-    1: 71,
-    2: 68,
-    3: 65,
-    4: 60, // exactly 60 min — pre-bill drop mandatory
-  } as Record<string, number>,
-
-  /**
-   * Cake release sequence within Slot 8 (relative to Slot 8 trigger T+0).
-   * Format: "M:SS" — when KITCHEN releases each cake plate to RUNNER.
-   * RUNNER lights candle at pickup (NOT kitchen).
+   * Cake release sequence within Slot 8 (relative to Slot 8 trigger T+0=18:37).
+   * Format: "MM:SS" — when KITCHEN releases each cake plate to RUNNER.
+   * RUNNER lights candle at pickup (NOT Kitchen).
+   *
+   * Source: unified §5.8.4 announce table —
+   *   R1 announce ~18:53 → T+16:00
+   *   R2 announce ~18:55:30 → T+18:30
+   *   R3 announce ~18:58:00 → T+21:00
+   *   R4 announce ~19:00:30 → T+23:30
+   * Cake plate is released ~at announce so candle is lit and on-table at
+   * the firework beat (16 s into the 30 s 8b video).
    */
   cakeReleaseSequence: {
-    1: [{ round: 1, releaseAt: "1:30" }],
+    1: [{ round: 1, releaseAt: "16:00" }],
     2: [
-      { round: 1, releaseAt: "1:30" },
-      { round: 2, releaseAt: "3:30" },
+      { round: 1, releaseAt: "16:00" },
+      { round: 2, releaseAt: "18:30" },
     ],
     3: [
-      { round: 1, releaseAt: "1:30" },
-      { round: 2, releaseAt: "3:30" },
-      { round: 3, releaseAt: "5:30" },
+      { round: 1, releaseAt: "16:00" },
+      { round: 2, releaseAt: "18:30" },
+      { round: 3, releaseAt: "21:00" },
     ],
     4: [
-      { round: 1, releaseAt: "1:30" },
-      { round: 2, releaseAt: "3:30" },
-      { round: 3, releaseAt: "5:30" },
-      { round: 4, releaseAt: "7:30" },
+      { round: 1, releaseAt: "16:00" },
+      { round: 2, releaseAt: "18:30" },
+      { round: 3, releaseAt: "21:00" },
+      { round: 4, releaseAt: "23:30" },
     ],
-  } as Record<number, Array<{ round: number; releaseAt: string }>>,
+  } as Record<
+    Exclude<CelebrationCount, 0>,
+    Array<{ round: number; releaseAt: string }>
+  >,
 
   /**
    * Per-round beat structure (T+0 = round start within Slot 8 ceremony).
@@ -666,7 +714,7 @@ export const CELEBRATION_TIMING = {
     { offsetSec: 40, beat: "video-end", actor: "—", description: "Video ends; cake remains lit on table." },
     { offsetSec: 40, beat: "photo-window", actor: "RUNNER", description: "Offer photo (30s window); booker phone preferred." },
     { offsetSec: 130, beat: "close-line", actor: "COUNTER", description: "Brief close: \"On behalf of DAIMASU, happy [type], [Name].\"" },
-    { offsetSec: 140, beat: "round-complete", actor: "COUNTER", description: 'Push intercom: "Counter to all — Round R complete." Move to next round.' },
+    { offsetSec: 150, beat: "round-complete", actor: "COUNTER", description: 'Push intercom: "Counter to all — Round R complete." Move to next round.' },
   ],
 
   /**
@@ -685,12 +733,12 @@ export const CELEBRATION_TIMING = {
   /**
    * Slow-pace + max celebrations combination override.
    * If COUNTER declared "slow pace" at slot 1-2 AND celebration count == 4,
-   * Slot 8 ceremony rounds compress from 140s to 90s each.
+   * Slot 8 ceremony rounds compress from 150 s to 90 s each.
    */
   slowPaceCompressionTrigger: {
-    paceProfile: "slow",
-    celebrationCountThreshold: 4,
-    compressionToSec: 90,
+    paceProfile: "slow" as const,
+    celebrationCountThreshold: 4 as CelebrationCount,
+    compressionToSec: COMPRESSED_ROUND_SEC,
   },
 } as const;
 
@@ -699,42 +747,132 @@ export const CELEBRATION_TIMING = {
 /* ------------------------------------------------------------------------- */
 
 /**
- * Get total Slot 8 duration in minutes for a given celebration count.
+ * Parse "HH:MM" → minutes-since-midnight. Returns NaN on bad input.
  */
-export function getSlot8Duration(count: CelebrationCount): number {
-  return CELEBRATION_TIMING.slot8DurationMinByCount[String(count)];
+function parseClockToMin(hhmm: string): number {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
+  if (!m) return NaN;
+  return Number(m[1]) * 60 + Number(m[2]);
 }
 
 /**
- * Get the actual Ending video start time, given the celebration count.
- * Returns "HH:MM" string; defaults to 1st seating.
+ * Format minutes-since-midnight (rounded down) → "HH:MM".
+ * Allows fractional minutes (rounded down to whole minute for clock display).
+ */
+function formatMinToClock(totalMin: number): string {
+  const t = Math.floor(totalMin);
+  const h = Math.floor(t / 60);
+  const m = t % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Get total Slot 8 duration in minutes for a given scenario + celebration
+ * count. Returns null if the (scenario, count) is impossible per the
+ * capacity matrix (e.g. A + 4 celebrations).
+ */
+export function getSlot8Duration(
+  scenario: CoverScenario,
+  count: CelebrationCount,
+): number | null {
+  return CELEBRATION_TIMING.slot8DurationMinByScenarioAndCount[scenario][count];
+}
+
+/**
+ * Programmatic computation of Slot 8 minutes from base + adders. Used as a
+ * cross-check / fallback. Mirrors the lookup table for the valid cells.
+ */
+export function computeSlot8DurationMin(
+  scenario: CoverScenario,
+  count: CelebrationCount,
+): number {
+  return SLOT8_BASE_MIN_BY_SCENARIO[scenario] + count * STANDARD_ROUND_MIN;
+}
+
+/**
+ * Worst-case (photo overrun) Slot 8 minutes for a given (scenario, count).
+ * Falls back to the standard duration if no worst-case override is defined.
+ */
+export function getSlot8DurationWorstCase(
+  scenario: CoverScenario,
+  count: CelebrationCount,
+): number | null {
+  const worst =
+    CELEBRATION_TIMING.slot8DurationWorstCaseMin[scenario]?.[count];
+  if (worst != null) return worst;
+  return getSlot8Duration(scenario, count);
+}
+
+/**
+ * Get the actual Ending video start time, given scenario + celebration count.
+ * Returns "HH:MM" string. Defaults to 1st seating.
+ *
+ * Computes from slot-8 trigger (18:37 / 21:07) + slot-8 duration. Returns
+ * null if the (scenario, count) combination is impossible.
  */
 export function getEndingTime(
+  scenario: CoverScenario,
   count: CelebrationCount,
-  seating: 1 | 2 = 1
-): string {
-  const map =
-    seating === 1
-      ? CELEBRATION_TIMING.endingStartTime1st
-      : CELEBRATION_TIMING.endingStartTime2nd;
-  return map[String(count)];
+  seating: Seating = 1,
+): string | null {
+  const dur = getSlot8Duration(scenario, count);
+  if (dur == null) return null;
+  const slot8 = COURSES.find((c) => c.slot === 8);
+  if (!slot8) return null;
+  const triggerStr =
+    seating === 1 ? slot8.timing.triggerTime1st : slot8.timing.triggerTime2nd;
+  const trigger = parseClockToMin(triggerStr);
+  if (Number.isNaN(trigger)) return null;
+  return formatMinToClock(trigger + dur);
 }
 
 /**
- * Get the available turnaround minutes between 1st seating end and 2nd
- * seating doors (20:00) given celebration count.
+ * Worst-case ending time (photo overrun absorbed). Used to validate the
+ * "never run later than ~19:12" budget guardrail.
  */
-export function getTurnaroundMinutes(count: CelebrationCount): number {
-  return CELEBRATION_TIMING.turnaroundAvailableMin[String(count)];
+export function getEndingTimeWorstCase(
+  scenario: CoverScenario,
+  count: CelebrationCount,
+  seating: Seating = 1,
+): string | null {
+  const dur = getSlot8DurationWorstCase(scenario, count);
+  if (dur == null) return null;
+  const slot8 = COURSES.find((c) => c.slot === 8);
+  if (!slot8) return null;
+  const triggerStr =
+    seating === 1 ? slot8.timing.triggerTime1st : slot8.timing.triggerTime2nd;
+  const trigger = parseClockToMin(triggerStr);
+  if (Number.isNaN(trigger)) return null;
+  return formatMinToClock(trigger + dur);
+}
+
+/**
+ * Get the available turnaround minutes between 1st seating ending and
+ * 2nd seating doors (20:00 target) for a given (scenario, count).
+ * Returns null if combination is impossible.
+ */
+export function getTurnaroundMinutes(
+  scenario: CoverScenario,
+  count: CelebrationCount,
+): number | null {
+  const ending = getEndingTime(scenario, count, 1);
+  if (ending == null) return null;
+  const endMin = parseClockToMin(ending);
+  const doorsSecond = parseClockToMin(SEATING_SCHEDULE.doorsSecond);
+  // Add ~1 min for ending video to actually finish + payment buffer.
+  const endingFinishMin = endMin + 1;
+  return doorsSecond - endingFinishMin;
 }
 
 /**
  * Get the cake-release schedule (within Slot 8) for given celebration count.
+ * Returns empty array for count = 0.
  */
 export function getCakeReleaseSchedule(
-  count: CelebrationCount
+  count: CelebrationCount,
 ): Array<{ round: number; releaseAt: string }> {
-  return CELEBRATION_TIMING.cakeReleaseSequence[count] || [];
+  if (count === 0) return [];
+  return CELEBRATION_TIMING.cakeReleaseSequence[count];
 }
 
 /**
@@ -743,12 +881,12 @@ export function getCakeReleaseSchedule(
  */
 export function getEffectiveRoundDuration(
   count: CelebrationCount,
-  paceProfile: "fast" | "average" | "slow"
+  paceProfile: "fast" | "average" | "slow",
 ): number {
   const trigger = CELEBRATION_TIMING.slowPaceCompressionTrigger;
   if (
     paceProfile === trigger.paceProfile &&
-    count >= (trigger.celebrationCountThreshold as CelebrationCount)
+    count >= trigger.celebrationCountThreshold
   ) {
     return trigger.compressionToSec;
   }
@@ -760,7 +898,7 @@ export function getEffectiveRoundDuration(
  * Returns true if the celebration field is anything other than 'none'.
  */
 export function shouldArmCelebrationSlot(
-  celebrationId: string | null | undefined
+  celebrationId: string | null | undefined,
 ): boolean {
   if (!celebrationId) return false;
   return celebrationId !== "none";
@@ -769,15 +907,24 @@ export function shouldArmCelebrationSlot(
 /**
  * Get the slot active at a given clock time (HH:MM).
  * Used for kitchen-display "what's next" logic.
+ *
+ * Numeric comparison (minutes-since-midnight) — string lex-compare would
+ * fail across midnight or with single-digit hours, so we convert.
  */
-export function getSlotAt(timeHHMM: string, seating: 1 | 2 = 1): CourseEntry | null {
+export function getSlotAt(
+  timeHHMM: string,
+  seating: Seating = 1,
+): CourseEntry | null {
+  const target = parseClockToMin(timeHHMM);
+  if (Number.isNaN(target)) return null;
   const key = seating === 1 ? "triggerTime1st" : "triggerTime2nd";
-  // Find latest slot whose trigger ≤ given time
   let latest: CourseEntry | null = null;
   for (const c of COURSES) {
     const t = c.timing[key];
     if (t === "—") continue;
-    if (t <= timeHHMM) latest = c;
+    const tMin = parseClockToMin(t);
+    if (Number.isNaN(tMin)) continue;
+    if (tMin <= target) latest = c;
   }
   return latest;
 }
@@ -785,12 +932,19 @@ export function getSlotAt(timeHHMM: string, seating: 1 | 2 = 1): CourseEntry | n
 /**
  * Get the next slot to trigger, given current time.
  */
-export function getNextSlot(timeHHMM: string, seating: 1 | 2 = 1): CourseEntry | null {
+export function getNextSlot(
+  timeHHMM: string,
+  seating: Seating = 1,
+): CourseEntry | null {
+  const target = parseClockToMin(timeHHMM);
+  if (Number.isNaN(target)) return null;
   const key = seating === 1 ? "triggerTime1st" : "triggerTime2nd";
   for (const c of COURSES) {
     const t = c.timing[key];
     if (t === "—") continue;
-    if (t > timeHHMM) return c;
+    const tMin = parseClockToMin(t);
+    if (Number.isNaN(tMin)) continue;
+    if (tMin > target) return c;
   }
   return null;
 }
@@ -802,7 +956,7 @@ export function getNextSlot(timeHHMM: string, seating: 1 | 2 = 1): CourseEntry |
 export function getPlatingWindow(
   slot: number,
   scenario: CoverScenario,
-  seating: 1 | 2 = 1
+  seating: Seating = 1,
 ): { startPlating: string; readyAtPass: string; durationSec: number } | null {
   const c = COURSES.find((x) => x.slot === slot);
   if (!c || !c.timing) return null;
